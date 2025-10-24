@@ -1,0 +1,24 @@
+CREATE PROCEDURE ddbba.registros_aleatorios
+    --Parametros
+    @cant_registros INT
+AS
+BEGIN
+    DECLARE @cont INT = 0;
+    --Inicio While
+    WHILE @cont < @cant_registros
+    BEGIN
+        --Inserta
+        INSERT INTO ddbba.alumno (id_comision, nombre, apellido, localidad, fecha_nacimiento)
+        SELECT
+            (SELECT TOP 1 id_comision FROM ddbba.curso ORDER BY NEWID()),
+            (SELECT TOP 1 nombre FROM ddbba.nombres ORDER BY NEWID()),
+            (SELECT TOP 1 apellido FROM ddbba.nombres ORDER BY NEWID()),
+            (SELECT TOP 1 localidad FROM ddbba.localidad ORDER BY NEWID()),
+            (SELECT TOP 1 fecha_nacimiento FROM ddbba.fecha_nacimiento ORDER BY NEWID());
+        --Incremento contador
+        SET @cont +=1;
+    --Fin While
+    END
+END
+-- Acá usé NEWID(), pero para insertar los datos aleatorios, tenemos que usar la funcion RAND()
+-- Documentacion https://www.geeksforgeeks.org/sql/rand-function-in-sql-server/
