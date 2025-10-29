@@ -10,11 +10,13 @@ create schema ddbba
 go 
 
 -- Tabla de consorcio
-CREATE TABLE ddbba.consorcio (
+CREATE TABLE  ddbba.consorcio (
     id_consorcio INT PRIMARY KEY IDENTITY(1,1),
+	consorcio varchar(12), --agregue el consorcio que seria el numero de consorcio que aparece en el archivo
     nombre VARCHAR(255) NOT NULL,
     metros_cuadrados INT,
     direccion VARCHAR(255) NOT NULL,
+	cant_UF smallint, --agrege la cantidad de unidades funcionales
     cbu VARCHAR(22) UNIQUE
 );
 go
