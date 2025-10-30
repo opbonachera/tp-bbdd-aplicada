@@ -1,4 +1,4 @@
-
+--Se tienen que descargar access para poder exportar el archivo sql https://www.microsoft.com/en-us/download/details.aspx?id=54920&msockid=0563dc410f8e6bbc023dc9f70ef26a4b
 use "consorcios"
 go 
 
