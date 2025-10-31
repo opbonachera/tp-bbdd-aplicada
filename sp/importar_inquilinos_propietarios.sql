@@ -26,15 +26,17 @@ BEGIN
     PRINT 'Tabla temporal creada.';
 
     --2.  Cargar el CSV usando BULK INSERT
-    BULK INSERT #InquilinosTemp
-    FROM '/var/opt/mssql/archivo/Inquilino-propietarios-datos.csv'
-    WITH (
-        FIELDTERMINATOR = ';',
-        ROWTERMINATOR = '\n',
-        FIRSTROW = 2,
-        TABLOCK
-    );
-
+    DECLARE @sql NVARCHAR(MAX);
+        SET @sql = N'
+            BULK INSERT #InquilinosTemp
+            FROM ''' + @RutaArchivo + N'''
+            WITH (
+                FIELDTERMINATOR = '';'',
+                ROWTERMINATOR = ''\n'',
+                FIRSTROW = 2,
+                TABLOCK
+            );';
+        EXEC(@sql);
     PRINT 'Datos importados en tabla temporal.';
 
     -- Creo tablas para insertar datos de prueba
