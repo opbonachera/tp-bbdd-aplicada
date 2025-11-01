@@ -1,4 +1,5 @@
-CREATE OR ALTER PROCEDURE sp_importar_pagos
+
+CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
     @ruta NVARCHAR(MAX)
 AS
 BEGIN
@@ -48,3 +49,7 @@ BEGIN
     DROP TABLE #temp_pagos;
 END;
 GO
+
+exec ddbba.sp_importar_pagos @ruta = '/app/datasets/tp/pagos_consorcios.csv'
+
+select * from ddbba.pago
