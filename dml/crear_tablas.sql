@@ -27,6 +27,7 @@ CREATE TABLE ddbba.persona (
     nombre VARCHAR(255),
     mail VARCHAR(255) UNIQUE,
     telefono VARCHAR(25),
+    cbu VARCHAR(50), -- Dato del archivo inquilinos propietarios
     PRIMARY KEY (nro_documento, tipo_documento)
 );
 go
@@ -37,7 +38,7 @@ CREATE TABLE ddbba.tipo_gasto (
 );
 go
 
--- Tabla de Tipos de Envío
+-- Tabla de Tipos de Envï¿½o
 CREATE TABLE ddbba.tipo_envio (
     id_tipo_envio INT PRIMARY KEY IDENTITY(1,1),
     detalle VARCHAR(100)
@@ -87,7 +88,7 @@ CREATE TABLE ddbba.expensa (
     primer_vencimiento DATE,
     segundo_vencimiento DATE,
     FOREIGN KEY (id_consorcio) REFERENCES ddbba.consorcio(id_consorcio)
-        ON DELETE CASCADE -- AÑADIDO
+        ON DELETE CASCADE -- Aï¿½ADIDO
 );
 go 
 
@@ -114,7 +115,7 @@ CREATE TABLE ddbba.gasto_extraordinario (
     pago_en_cuotas BIT DEFAULT 0,
     importe_total DECIMAL(12, 2),
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa)
-        ON DELETE CASCADE -- AÑADIDO
+        ON DELETE CASCADE -- Aï¿½ADIDO
 );
 go
 
@@ -128,7 +129,7 @@ CREATE TABLE ddbba.cuotas (
 );
 go
 
--- Tabla de Envíos de Expensa (depende de multiples tablas)
+-- Tabla de Envï¿½os de Expensa (depende de multiples tablas)
 
 CREATE TABLE ddbba.envio_expensa (
     id_envio INT PRIMARY KEY IDENTITY(1,1),
