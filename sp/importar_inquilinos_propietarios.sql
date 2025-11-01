@@ -1,3 +1,4 @@
+
 CREATE OR ALTER PROCEDURE ddbba.ImportarInquilinosPropietarios
     @RutaArchivo VARCHAR(4000)
 AS
@@ -19,7 +20,7 @@ BEGIN
             EmailPersonal VARCHAR(150),
             TelefonoContacto VARCHAR(50),
             CVU_CBU VARCHAR(50),
-            Inquilino VARCHAR(10)
+            Inquilino TINYINT
         );
     END
     
@@ -39,101 +40,101 @@ BEGIN
         EXEC(@sql);
     PRINT 'Datos importados en tabla temporal.';
 
-    -- Creo tablas para insertar datos de prueba
-
-    CREATE TABLE #dniTypeTemp (
-    tipo VARCHAR(15) NOT NULL
-    );
-    INSERT #dniTypeTemp (tipo) VALUES ('DNI'), ('PASAPORTE');
- 
-
     -- 3. Insertar en tabla persona
 
 select * from ddbba.persona
 
-    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono)
+    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
     SELECT
-        (SELECT TOP 1 DNI FROM #InquilinosTemp ORDER BY NEWID()),
-        (SELECT TOP 1 tipo FROM #dniTypeTemp ORDER BY NEWID()), 
-        (SELECT TOP 1 TRIM(UPPER(CONCAT(nombre, Apellido))) FROM #InquilinosTemp ORDER BY NEWID()),
-        (SELECT TOP 1 REPLACE(TRIM(LOWER(EmailPersonal)), ' ','') FROM #InquilinosTemp ORDER BY NEWID()),
-        (SELECT TOP 1 TelefonoContacto FROM #InquilinosTemp ORDER BY NEWID());
-
+        DNI AS nro_documento,
+        CASE 
+            WHEN ABS(CHECKSUM(NEWID())) % 2 = 0 THEN 'DNI'
+            ELSE 'Pasaporte'
+        END AS tipo_documento,
+        TRIM(UPPER(CONCAT(nombre, Apellido))) AS nombre,
+        REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
+        TelefonoContacto AS telefono,
+        CVU_CBU AS cbu
+    FROM #InquilinosTemp
+    WHERE DNI IS NOT NULL;
+ 
     PRINT 'Personas insertadas.';
 
-    -- Insertar consorcios
+--     -- Insertar consorcios
 
-    CREATE TABLE #consorcioTemp (
-        nombre VARCHAR(255) NOT NULL,
-        metros_cuadrados INT,
-        direccion VARCHAR(255) NOT NULL,
-        --cbu VARCHAR(22) UNIQUE
-    );
+--     CREATE TABLE #consorcioTemp (
+--         nombre VARCHAR(255) NOT NULL,
+--         metros_cuadrados INT,
+--         direccion VARCHAR(255) NOT NULL,
+--         --cbu VARCHAR(22) UNIQUE
+--     );
 
-    INSERT #consorcioTemp (nombre, metros_cuadrados, direccion) VALUES ('Paul McCartney',52,'Abbey 1234'), ('Slash',22,'Road 321');
+--     INSERT #consorcioTemp (nombre, metros_cuadrados, direccion) VALUES ('Paul McCartney',52,'Abbey 1234'), ('Slash',22,'Road 321');
 
-    SELECT * FROM ddbba.consorcio
+--     SELECT * FROM ddbba.consorcio
 
-    INSERT INTO ddbba.consorcio (nombre, metros_cuadrados, direccion, cbu)
-    SELECT
-        (SELECT TOP 1 nombre FROM #consorcioTemp ORDER BY NEWID()),
-        (SELECT TOP 1 metros_cuadrados FROM #consorcioTemp ORDER BY NEWID()),
-        (SELECT TOP 1 direccion FROM #consorcioTemp ORDER BY NEWID()), 
-        (SELECT TOP 1 CVU_CBU FROM #InquilinosTemp ORDER BY NEWID());
-
-
-
-    -- 5. Insertar en unidad_funcional
-
-    CREATE TABLE #ufTemp (
-        metros_cuadrados INT,
-        piso INT,
-        departamento VARCHAR(10),
-        prorrateo FLOAT
-    );
-
-    INSERT #ufTemp (metros_cuadrados, piso, departamento, prorrateo) VALUES (21,3,'A',100.54), (22,4,'B',101.34), (23,5,'C',102.14);
+--     INSERT INTO ddbba.consorcio (nombre, metros_cuadrados, direccion, cbu)
+--     SELECT
+--         (SELECT TOP 1 nombre FROM #consorcioTemp ORDER BY NEWID()),
+--         (SELECT TOP 1 metros_cuadrados FROM #consorcioTemp ORDER BY NEWID()),
+--         (SELECT TOP 1 direccion FROM #consorcioTemp ORDER BY NEWID()),
+--         (SELECT TOP 1 cbu FROM ddbba.persona ORDER BY NEWID());
 
 
- SELECT * FROM ddbba.unidad_funcional
 
-    INSERT INTO ddbba.unidad_funcional (id_consorcio, metros_cuadrados, piso, departamento, cbu, prorrateo)
-    SELECT
-        (SELECT TOP 1 id_consorcio FROM ddbba.consorcio ORDER BY NEWID()),
-        (SELECT TOP 1 metros_cuadrados FROM #ufTemp ORDER BY NEWID()),
-        (SELECT TOP 1 piso FROM #ufTemp ORDER BY NEWID()),
-        (SELECT TOP 1 departamento FROM #ufTemp ORDER BY NEWID()), 
-        (SELECT TOP 1 CVU_CBU FROM #InquilinosTemp ORDER BY NEWID()), 
-        (SELECT TOP 1 prorrateo FROM #ufTemp ORDER BY NEWID());
+--     -- 5. Insertar en unidad_funcional
+
+--     CREATE TABLE #ufTemp (
+--         metros_cuadrados INT,
+--         piso INT,
+--         departamento VARCHAR(10),
+--         prorrateo FLOAT
+--     );
+
+--     INSERT #ufTemp (metros_cuadrados, piso, departamento, prorrateo) VALUES (21,3,'A',100.54), (22,4,'B',101.34), (23,5,'C',102.14);
+
+
+--  SELECT * FROM ddbba.unidad_funcional
+
+
+--     INSERT INTO ddbba.unidad_funcional (id_consorcio, metros_cuadrados, piso, departamento, cbu, prorrateo)
+--     SELECT
+--         (SELECT TOP 1 id_consorcio FROM ddbba.consorcio ORDER BY NEWID()),
+--         (SELECT TOP 1 metros_cuadrados FROM #ufTemp ORDER BY NEWID()),
+--         (SELECT TOP 1 piso FROM #ufTemp ORDER BY NEWID()),
+--         (SELECT TOP 1 departamento FROM #ufTemp ORDER BY NEWID()), 
+--         (SELECT TOP 1 CVU_CBU FROM #InquilinosTemp ORDER BY NEWID()), 
+--         (SELECT TOP 1 prorrateo FROM #ufTemp ORDER BY NEWID());
     
-    PRINT 'Unidades funcionales insertadas.';
+--     PRINT 'Unidades funcionales insertadas.';
 
+    SELECT * FROM ddbba.rol
 
     -- ==========================================================
     -- 6. Insertar en rol (relaciona persona con unidad)
     -- ==========================================================
-
-    CREATE TABLE #rolTemp (
-    nombre_rol VARCHAR(50) NOT NULL CHECK (nombre_rol IN ('Propietario', 'Inquilino'))
-    );
-
-    INSERT #rolTemp (nombre_rol) VALUES ('Propietario'), ('Inquilino');
-
-SELECT * FROM ddbba.rol
-
-    INSERT INTO ddbba.rol (id_unidad_funcional, nro_documento, tipo_documento, nombre_rol, fecha_inicio)
+    INSERT INTO ddbba.rol (id_unidad_funcional, nro_documento, tipo_documento, nombre_rol, activo, fecha_inicio)
     SELECT
-        (SELECT TOP 1 id_unidad_funcional FROM ddbba.unidad_funcional ORDER BY NEWID()),
-        (SELECT TOP 1 nro_documento FROM ddbba.persona ORDER BY NEWID()),
-        (SELECT TOP 1 tipo_documento FROM ddbba.persona ORDER BY NEWID()), 
-        (SELECT TOP 1 nombre_rol FROM #rolTemp ORDER BY NEWID()),
-        (SELECT TOP 1 GETDATE() FROM #rolTemp ORDER BY NEWID());
+        uf.id_unidad_funcional,
+        p.nro_documento,
+        p.tipo_documento,
+        CASE 
+            WHEN t.Inquilino = 1 THEN 'Inquilino'
+            ELSE 'Propietario'
+        END AS nombre_rol,
+        1 AS activo,
+        GETDATE() AS fecha_inicio
+    FROM #InquilinosTemp t
+    INNER JOIN ddbba.persona p
+        ON p.nro_documento = t.DNI 
+    INNER JOIN ddbba.unidad_funcional uf
+        ON uf.cbu = p.cbu;  -- Relaciona CBU del CSV con el de la unidad funcional
 
     PRINT 'Roles insertados.';
 
     PRINT '--- Importación finalizada correctamente ---';
 END;
- 
+
 
 EXEC ddbba.ImportarInquilinosPropietarios @RutaArchivo = '/var/opt/mssql/archivo/Inquilino-propietarios-datos.csv';
  
