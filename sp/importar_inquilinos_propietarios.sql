@@ -1,5 +1,5 @@
-CREATE OR ALTER PROCEDURE ddbba.importar_inquilinos_propietarios
-    @RutaArchivo VARCHAR(4000)
+CREATE OR ALTER PROCEDURE ddbba.sp_importar_inquilinos_propietarios
+    @ruta_archivo VARCHAR(4000)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,7 +29,7 @@ BEGIN
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
         BULK INSERT #InquilinosTemp
-        FROM ''' + @RutaArchivo + N'''
+        FROM ''' + @ruta_archivo + N'''
         WITH (
             FIELDTERMINATOR = '';'',
             ROWTERMINATOR = ''\n'',
@@ -126,6 +126,6 @@ BEGIN
     PRINT '--- Importación finalizada correctamente ---';
 END;
 
-EXEC ddbba.importar_inquilinos_propietarios @RutaArchivo = '/app/datasets/tp/Inquilino-propietarios-datos.csv'
+EXEC ddbba.importar_inquilinos_propietarios @ruta_archivo = '/app/datasets/tp/Inquilino-propietarios-datos.csv'
 
 select * from ddbba.rol

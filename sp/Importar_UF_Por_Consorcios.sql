@@ -1,6 +1,6 @@
 --IMPORTAR UF POR CONSORCIOS
-CREATE OR ALTER PROCEDURE ddbba.importar_uf_por_consorcios
-    @NombreArchivo NVARCHAR(255)
+CREATE OR ALTER PROCEDURE ddbba.sp_importar_uf_por_consorcios
+    @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
 	create table #temp_UF
@@ -22,7 +22,7 @@ BEGIN
     DECLARE @SQL NVARCHAR(MAX);
     SET @SQL = N'
         BULK INSERT #temp_UF
-        FROM ''' + @NombreArchivo + '''
+        FROM ''' + @ruta_archivo + '''
         WITH
         (
             FIELDTERMINATOR = ''\t'',   -- Tabulación
@@ -61,7 +61,7 @@ GO
     
 --PARA EJECUTAR EL SP
 EXEC ddbba.importar_uf_por_consorcios
-		@NombreArchivo='/app/datasets/tp/UF por consorcio.txt'
+		@ruta_archivo='/app/datasets/tp/UF por consorcio.txt'
 
 --PARA VER SI INSERTO CORRECTAMENTE
 select * from [ddbba].[unidad_funcional]

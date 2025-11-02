@@ -1,5 +1,5 @@
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_servicios
-	@RutaArch NVARCHAR(500),
+	@ruta_archivo NVARCHAR(500),
     @Anio INT = 2025 --Parametrizamos el anio para poder cambiarlo mas facilmente si lo necesitamos
 AS
 BEGIN
@@ -8,7 +8,7 @@ BEGIN
 	
     --Usamos SQL dinamico para abrir el JSON
 	DECLARE @sql NVARCHAR(MAX);
-	SET @sql = N'SELECT @jsonOut = BulkColumn FROM OPENROWSET(BULK ''' + @RutaArch + ''', SINGLE_CLOB) AS datos';
+	SET @sql = N'SELECT @jsonOut = BulkColumn FROM OPENROWSET(BULK ''' + @ruta_archivo + ''', SINGLE_CLOB) AS datos';
 	EXEC sp_executesql @SQL, N'@jsonOut NVARCHAR(MAX) OUTPUT', @jsonOut = @json OUTPUT;
 	
     --En el caso de que no encuentre el archivo, avisa y termina
@@ -77,14 +77,6 @@ BEGIN
         SELECT 1 FROM ddbba.tipo_gasto g WHERE g.detalle = t.detalle
     );
 
-    --Insertamos consorcios
-    INSERT INTO ddbba.consorcio (nombre)
-    SELECT DISTINCT nombre_consorcio
-    FROM #tempConsorcios tc
-    WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.consorcio c WHERE c.nombre = tc.nombre_consorcio
-    );
-
     --Insertamos expensas (una por cada consorcio y mes)
     INSERT INTO ddbba.expensa (id_consorcio, fecha_emision)
     SELECT DISTINCT c.id_consorcio,
@@ -113,45 +105,64 @@ BEGIN
 		SELECT 1 FROM ddbba.expensa e
 		WHERE e.id_consorcio = c.id_consorcio
 		  AND e.fecha_emision = TRY_CONVERT(DATE, CONCAT('01-', m.mes_num, '-', @Anio), 105)
+        
 	);
 
 	-- Insertamos los gastos ordinarios
-	INSERT INTO ddbba.gastos_ordinarios (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
-	SELECT 
-		e.id_expensa,
-		t.id_tipo_gasto,
-		t.detalle AS detalle,
-		NULL AS nro_factura,
-		CASE t.detalle --Casteamos todos los valores a tipo decimal
-			WHEN 'BANCARIOS' THEN TRY_CAST(tc.bancarios AS DECIMAL(12,2))
-			WHEN 'LIMPIEZA' THEN TRY_CAST(tc.limpieza AS DECIMAL(12,2))
-			WHEN 'ADMINISTRACION' THEN TRY_CAST(tc.administracion AS DECIMAL(12,2))
-			WHEN 'SEGUROS' THEN TRY_CAST(tc.seguros AS DECIMAL(12,2))
-			WHEN 'GASTOS GENERALES' THEN TRY_CAST(tc.gastos_generales AS DECIMAL(12,2))
-			WHEN 'SERVICIOS PUBLICOS-Agua' THEN TRY_CAST(tc.servicios_agua AS DECIMAL(12,2))
-			WHEN 'SERVICIOS PUBLICOS-Luz' THEN TRY_CAST(tc.servicios_luz AS DECIMAL(12,2))
-			WHEN 'SERVICIOS PUBLICOS-Internet' THEN TRY_CAST(tc.servicios_internet AS DECIMAL(12,2))
-		END AS importe
-	FROM #tempConsorcios tc
-	INNER JOIN ddbba.consorcio c ON c.nombre = tc.nombre_consorcio
-	INNER JOIN ddbba.expensa e ON e.id_consorcio = c.id_consorcio
-		AND e.fecha_emision = TRY_CONVERT(DATE, CONCAT('01-', tc.mes, '-2025'), 105)
-	CROSS JOIN ddbba.tipo_gasto t
-	WHERE (
-		(t.detalle = 'BANCARIOS' AND tc.bancarios IS NOT NULL) OR
-		(t.detalle = 'LIMPIEZA' AND tc.limpieza IS NOT NULL) OR
-		(t.detalle = 'ADMINISTRACION' AND tc.administracion IS NOT NULL) OR
-		(t.detalle = 'SEGUROS' AND tc.seguros IS NOT NULL) OR
-		(t.detalle = 'GASTOS GENERALES' AND tc.gastos_generales IS NOT NULL) OR
-		(t.detalle = 'SERVICIOS PUBLICOS-Agua' AND tc.servicios_agua IS NOT NULL) OR
-		(t.detalle = 'SERVICIOS PUBLICOS-Luz' AND tc.servicios_luz IS NOT NULL) OR
-		(t.detalle = 'SERVICIOS PUBLICOS-Internet' AND tc.servicios_internet IS NOT NULL)
-	)
-	AND NOT EXISTS (
-		SELECT 1 FROM ddbba.gastos_ordinarios gaor
-		WHERE gaor.id_expensa = e.id_expensa
-		  AND gaor.id_tipo_gasto = t.id_tipo_gasto
-	);
+	-- Insertamos los gastos ordinarios
+        INSERT INTO ddbba.gastos_ordinarios (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
+        SELECT 
+	        e.id_expensa,
+	        t.id_tipo_gasto,
+	        t.detalle AS detalle,
+	        NULL AS nro_factura,
+	        CASE t.detalle
+		        WHEN 'BANCARIOS' THEN TRY_CAST(tc.bancarios AS DECIMAL(12,2))
+		        WHEN 'LIMPIEZA' THEN TRY_CAST(tc.limpieza AS DECIMAL(12,2))
+		        WHEN 'ADMINISTRACION' THEN TRY_CAST(tc.administracion AS DECIMAL(12,2))
+		        WHEN 'SEGUROS' THEN TRY_CAST(tc.seguros AS DECIMAL(12,2))
+		        WHEN 'GASTOS GENERALES' THEN TRY_CAST(tc.gastos_generales AS DECIMAL(12,2))
+		        WHEN 'SERVICIOS PUBLICOS-Agua' THEN TRY_CAST(tc.servicios_agua AS DECIMAL(12,2))
+		        WHEN 'SERVICIOS PUBLICOS-Luz' THEN TRY_CAST(tc.servicios_luz AS DECIMAL(12,2))
+		        WHEN 'SERVICIOS PUBLICOS-Internet' THEN TRY_CAST(tc.servicios_internet AS DECIMAL(12,2))
+	        END AS importe
+        FROM #tempConsorcios tc
+        INNER JOIN ddbba.consorcio c ON c.nombre = tc.nombre_consorcio
+        CROSS APPLY (
+            SELECT CASE LOWER(LTRIM(RTRIM(tc.mes)))
+                WHEN 'enero' THEN '01'
+                WHEN 'febrero' THEN '02'
+                WHEN 'marzo' THEN '03'
+                WHEN 'abril' THEN '04'
+                WHEN 'mayo' THEN '05'
+                WHEN 'junio' THEN '06'
+                WHEN 'julio' THEN '07'
+                WHEN 'agosto' THEN '08'
+                WHEN 'septiembre' THEN '09'
+                WHEN 'octubre' THEN '10'
+                WHEN 'noviembre' THEN '11'
+                WHEN 'diciembre' THEN '12'
+                ELSE NULL
+            END AS mes_num
+        ) AS m
+        INNER JOIN ddbba.expensa e ON e.id_consorcio = c.id_consorcio
+	        AND e.fecha_emision = TRY_CONVERT(DATE, CONCAT('01-', m.mes_num, '-', @Anio), 105)
+        CROSS JOIN ddbba.tipo_gasto t
+        WHERE (
+	        (t.detalle = 'BANCARIOS' AND tc.bancarios IS NOT NULL) OR
+	        (t.detalle = 'LIMPIEZA' AND tc.limpieza IS NOT NULL) OR
+	        (t.detalle = 'ADMINISTRACION' AND tc.administracion IS NOT NULL) OR
+	        (t.detalle = 'SEGUROS' AND tc.seguros IS NOT NULL) OR
+	        (t.detalle = 'GASTOS GENERALES' AND tc.gastos_generales IS NOT NULL) OR
+	        (t.detalle = 'SERVICIOS PUBLICOS-Agua' AND tc.servicios_agua IS NOT NULL) OR
+	        (t.detalle = 'SERVICIOS PUBLICOS-Luz' AND tc.servicios_luz IS NOT NULL) OR
+	        (t.detalle = 'SERVICIOS PUBLICOS-Internet' AND tc.servicios_internet IS NOT NULL)
+        )
+        AND NOT EXISTS (
+	        SELECT 1 FROM ddbba.gastos_ordinarios gaor
+	        WHERE gaor.id_expensa = e.id_expensa
+	          AND gaor.id_tipo_gasto = t.id_tipo_gasto
+        );
 
 	PRINT 'Datos importados.';
 
@@ -161,13 +172,6 @@ GO
 
 --ejecuto el sp (chequear ruta de archivo)
 EXEC ddbba.sp_importar_servicios 
-	@RutaArch = N'C:\Users\User\OneDrive - Universidad Nacional de la Matanza\Oli UNLAM\2° AÑO\2° CUATRIMESTRE (2do año)\Base de Datos Aplicadas\TP\Archivos-para-el-TP (2)\Archivos para el TP\Servicios.Servicios.json';
+	@ruta_archivo = '\app\datasets\tp\Servicios.Servicios.json';
 GO
 
--- EXTRA:
---chequeo que los datos se hayan insertado correctamente
-SELECT * FROM ddbba.consorcio;
-SELECT * FROM ddbba.expensa;
-SELECT * FROM ddbba.tipo_gasto;
-SELECT * FROM ddbba.gastos_ordinarios;
-GO
