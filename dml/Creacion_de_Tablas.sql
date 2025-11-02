@@ -15,6 +15,8 @@ DROP TABLE ddbba.persona
 DROP TABLE ddbba.Proveedores
 DROP TABLE  ddbba.consorcio 
 --
+
+drop database "consorcios"
 create database "consorcios"
 go
 
@@ -73,7 +75,7 @@ CREATE TABLE ddbba.unidad_funcional (
     id_unidad_funcional INT PRIMARY KEY IDENTITY(1,1),
     id_consorcio INT,
     metros_cuadrados INT,
-    piso INT,
+    piso varchar(2),
     departamento VARCHAR(10),
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,

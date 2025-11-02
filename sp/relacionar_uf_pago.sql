@@ -3,19 +3,21 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    PRINT 'Iniciando la asociación de pagos...';
+    PRINT 'Iniciando la asociaciï¿½n de pagos...';
 
-    -- 1. Actualiza la tabla 'pago'
+    -- ==========================================================
+    -- 1. Actualiza el id de la unidad funcional cuando el CBU del pago coincide con el CBU de la tabla de uf
+    -- ==========================================================
     UPDATE p
     SET 
         p.id_unidad_funcional = uf.id_unidad_funcional, -- Asigna el ID de la UF
         p.estado = 'asociado'                           -- Cambia el estado
     FROM 
         ddbba.pago AS p
-    -- Une 'pago' con 'unidad_funcional' donde los CBU coincidan
+    
     JOIN 
         ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
-    -- Solo actualiza los pagos que aún no están asociados
+    -- Solo actualiza los pagos que aï¿½n no estï¿½n asociados
     WHERE 
         p.id_unidad_funcional IS NULL;
     

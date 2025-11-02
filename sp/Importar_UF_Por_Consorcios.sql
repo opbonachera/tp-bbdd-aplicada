@@ -1,5 +1,5 @@
 --IMPORTAR UF POR CONSORCIOS
-CREATE OR ALTER PROCEDURE ddbba.Importar_UF_Por_Consorcios
+CREATE OR ALTER PROCEDURE ddbba.importar_uf_por_consorcios
     @NombreArchivo NVARCHAR(255)
 AS
 BEGIN
@@ -60,8 +60,8 @@ END
 GO
     
 --PARA EJECUTAR EL SP
-EXEC ddbba.Importar_UF_Por_Consorcios
-		@NombreArchivo='C:\Importar_TP\UF por consorcio.txt'
+EXEC ddbba.importar_uf_por_consorcios
+		@NombreArchivo='/app/datasets/tp/UF por consorcio.txt'
 
 --PARA VER SI INSERTO CORRECTAMENTE
 select * from [ddbba].[unidad_funcional]
