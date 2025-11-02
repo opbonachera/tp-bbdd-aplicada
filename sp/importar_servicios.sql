@@ -55,7 +55,7 @@ BEGIN
     --Normalizamos el texto (eliminamos espacios de strings y normalizamos valores numericos)
     UPDATE #tempConsorcios
     SET
-        nombre_consorcio = ddbba.fn_limpiar_espacios(nombre_consorcio),
+        nombre_consorcio = nombre_consorcio,
         mes = ddbba.fn_limpiar_espacios(mes),
         bancarios = ddbba.fn_normalizar_monto(bancarios),
         limpieza = ddbba.fn_normalizar_monto(limpieza),
@@ -174,4 +174,29 @@ GO
 EXEC ddbba.sp_importar_servicios 
 	@ruta_archivo = '\app\datasets\tp\Servicios.Servicios.json';
 GO
+
+-- EXTRA:
+--chequeo que los datos se hayan insertado correctamente
+SELECT * FROM ddbba.consorcio;
+SELECT * FROM ddbba.expensa;
+SELECT * FROM ddbba.tipo_gasto;
+SELECT count(importe)
+FROM ddbba.gastos_ordinarios
+group by importe;
+GO
+
+select sum(importe)
+from ddbba.gastos_ordinarios
+group by id_tipo_gasto
+
+SELECT 
+    c.nombre AS consorcio,
+    SUM(go.importe) AS total_gastos_generales
+FROM ddbba.gastos_ordinarios go
+INNER JOIN ddbba.expensa e ON e.id_expensa = go.id_expensa
+INNER JOIN ddbba.consorcio c ON c.id_consorcio = e.id_consorcio
+INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = go.id_tipo_gasto
+WHERE tg.detalle = 'GASTOS GENERALES'
+GROUP BY c.nombre
+ORDER BY c.nombre;
 
