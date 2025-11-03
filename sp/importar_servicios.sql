@@ -172,7 +172,7 @@ GO
 
 --ejecuto el sp (chequear ruta de archivo)
 EXEC ddbba.sp_importar_servicios 
-	@ruta_archivo = '\app\datasets\tp\Servicios.Servicios.json';
+	@ruta_archivo = 'C:\Users\Dell\Documents\base aplicada\tp-bbdd-aplicada\documentacion\Archivos para el TP\Servicios.Servicios.json';
 GO
 
 -- EXTRA:
@@ -191,12 +191,11 @@ group by id_tipo_gasto
 
 SELECT 
     c.nombre AS consorcio,
-    SUM(go.importe) AS total_gastos_generales
-FROM ddbba.gastos_ordinarios go
-INNER JOIN ddbba.expensa e ON e.id_expensa = go.id_expensa
+    SUM(gaor.importe) AS total_gastos_generales
+FROM ddbba.gastos_ordinarios gaor
+INNER JOIN ddbba.expensa e ON e.id_expensa = gaor.id_expensa
 INNER JOIN ddbba.consorcio c ON c.id_consorcio = e.id_consorcio
-INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = go.id_tipo_gasto
+INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = gaor.id_tipo_gasto
 WHERE tg.detalle = 'GASTOS GENERALES'
 GROUP BY c.nombre
 ORDER BY c.nombre;
-

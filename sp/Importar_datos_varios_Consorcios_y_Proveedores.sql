@@ -115,7 +115,7 @@ GO
 
 --Para ejecutar el SP
 EXEC ddbba.sp_importar_proveedores
-	@NomArch='C:\Importar_TP\datos varios.xlsx' --aca va la ruta de donde tengan el archivo
+	@NomArch='C:\Users\Dell\Documents\base aplicada\tp-bbdd-aplicada\documentacion\Archivos para el TP\datos varios.xlsx' --aca va la ruta de donde tengan el archivo
 
 --Para ver si se inserto todo correctamente
 select * from ddbba.proveedores
@@ -132,4 +132,4 @@ EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.12.0', 'AllowInProcess', 1;
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.12.0', 'DynamicParameters', 1;
 
 --para saber si sql encuentra el archivo
-EXEC xp_fileexist 'C:\Importar_TP\datos varios.xlsx';
+EXEC xp_fileexist 'C:\Users\Dell\Documents\base aplicada\tp-bbdd-aplicada\documentacion\Archivos para el TP\datos varios.xlsx';

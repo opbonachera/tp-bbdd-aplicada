@@ -10,14 +10,16 @@ BEGIN
 4) Devolvemos el numero normalizado
 */
 
-DECLARE @resultado NVARCHAR(50);
+DECLARE @resultado NVARCHAR(50), @entera NVARCHAR(50), @decimal NVARCHAR(10);
 
 --1) Limpiamos caracteres no deseados
 SET @resultado = ddbba.fn_limpiar_espacios (LTRIM(RTRIM(ISNULL(@valor, '')))); --borra espacios izq, der y entre medio
 SET @resultado = REPLACE(@resultado, '$', ''); --saca $ (si lo tuviese)
-
+SET @resultado = REPLACE(@resultado, ',', '');
+SET @resultado = REPLACE(@resultado, '.', '');
+SET @resultado = STUFF(@resultado,len(@resultado)-2,0,'.');
 --2) Identificamos cual es el separador decimal mediante los distintos casos
-DECLARE @posComa INT = CHARINDEX (',', REVERSE(@resultado)); --buscamos la ultima coma y punto en el texto (invirtiendolo y devolviendo la posicion para encontrar el separador del final)
+/*DECLARE @posComa INT = CHARINDEX (',', REVERSE(@resultado)); --buscamos la ultima coma y punto en el texto (invirtiendolo y devolviendo la posicion para encontrar el separador del final)
 DECLARE @posPunto INT = CHARINDEX ('.', REVERSE(@resultado));
 
 --3) Eliminamos el separador de miles y cambiamos decimal a punto 
@@ -26,11 +28,14 @@ BEGIN
 	--CASO 1: No hay separadores -> convierto a numero directamente
 	SET @resultado = @resultado;
 END
-ELSE IF @posComa > 0 AND @posPunto = 0
+ELSE IF (@posComa > 0) AND (@posComa < @posPunto) 
 BEGIN
 	--CASO 2: 12.530,25 -> convierto a 12530.25
-	SET @resultado = REPLACE(@resultado, '.', ''); --saco punto de miles
-	SET @resultado = REPLACE(@resultado, ',', '.'); --cambio coma decimal por punto
+	SET @entera = LEFT(@resultado, LEN(@resultado) - @posComa);
+	SET @decimal = RIGHT(@resultado, @posComa - 1);
+	SET @entera = REPLACE(@entera, '.', ''); --saco punto de miles
+	SET @entera = REPLACE(@entera, ',', ''); --cambio coma decimal por punto
+	SET @resultado=@entera+'.'+@decimal;
 END
 ELSE IF @posPunto > 0
 BEGIN
@@ -38,8 +43,8 @@ BEGIN
 	SET @resultado = REPLACE(@resultado, ',', ''); --elimino coma de miles
 END
 
---4) Devolvemos el numero normalizado
-	RETURN ISNULL(TRY_CAST(@resultado AS DECIMAL(12,2)), 0.00); --trata de castear el texto a decimal, si no puede, devuelve null y lo transformamos a 0.00
+--4) Devolvemos el numero normalizado*/
+RETURN ISNULL(TRY_CAST(@resultado AS DECIMAL(12,2)), 0.00); --trata de castear el texto a decimal, si no puede, devuelve null y lo transformamos a 0.00
 END
 GO
 
