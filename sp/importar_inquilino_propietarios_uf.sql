@@ -39,13 +39,40 @@ BEGIN
     PRINT 'Datos importados correctamente en #InquilinosUFTemp.';
 
     -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
 
+    ;WITH rel_cbu AS (
+        SELECT p.cbu FROM ddbba.persona p
+        WHERE p.cbu NOT IN (SELECT CVU_CBU FROM #InquilinosUFTemp) 
+    ),
+    rel_unidad_funcional AS (
+        SELECT uf.id_unidad_funcional FROM ddbba.unidad_funcional uf
+        WHERE uf.id_unidad_funcional NOT IN (SELECT nroUnidadFuncional FROM #InquilinosUFTemp)
+    )
+    
+    -- Inserto los CBU que estén en el archivo y que no estén en la tabla persona, creando datos ficticios
+
+    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
+    SELECT 
+        ABS(CHECKSUM(NEWID())) % 90000000 + 10000000 AS nro_documento, -- DNI sintético
+        'DNI' AS tipo_documento,
+        CONCAT('Robert', ROW_NUMBER() OVER (ORDER BY i.CVU_CBU)) AS nombre, -- nombre ficticio
+        CONCAT('Plant', ROW_NUMBER() OVER (ORDER BY i.CVU_CBU), '@ejemplo.com') AS mail,
+        CONCAT('11', RIGHT(ABS(CHECKSUM(NEWID())), 8)) AS telefono, -- número genérico
+        i.CVU_CBU AS cbu
+    FROM #InquilinosUFTemp i
+    INNER JOIN rel_cbu r ON r.cbu = i.CVU_CBU;
+
+
+    -- UNIDAD FUNCIONAL
+    -- UNIDAD FUNCIONAL
+    -- UNIDAD FUNCIONAL
+    -- UNIDAD FUNCIONAL
+
+    --
+    --
+    --
+    --
+    --
     PRINT '--- Importación finalizada correctamente ---';
 END;
 GO
