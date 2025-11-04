@@ -1,3 +1,4 @@
+
 CREATE OR ALTER PROCEDURE ddbba.ImportarInquilinosPropietariosUF
     @RutaArchivo VARCHAR(4000)
 AS
@@ -36,47 +37,63 @@ BEGIN
 
     EXEC sp_executesql @sql;
 
+    -- Elimino el caracter invisible de la columna Departamento del archivo CSV
+    UPDATE #InquilinosUFTemp
+    SET Departamento = RTRIM(REPLACE(REPLACE(Departamento, CHAR(13), ''), CHAR(10), ''));
+
+    -- SELECT * FROM #InquilinosUFTemp
+    -- SELECT DISTINCT nroUnidadFuncional FROM #InquilinosUFTemp
+    -- SELECT  CVU_CBU FROM #InquilinosUFTemp
+
     PRINT 'Datos importados correctamente en #InquilinosUFTemp.';
 
-    -- Relacionar CBU con CBU de la tabla persona, ID de Unidad funcional y los nombres de consorcios --
+    -- CBU que no están asignados a ninguna unidad funcional ni a ninguna persona
 
-    ;WITH rel_cbu AS (
-        SELECT p.cbu FROM ddbba.persona p
-        WHERE p.cbu NOT IN (SELECT CVU_CBU FROM #InquilinosUFTemp) 
-    ),
-    rel_unidad_funcional AS (
-        SELECT uf.id_unidad_funcional FROM ddbba.unidad_funcional uf
-        WHERE uf.id_unidad_funcional NOT IN (SELECT nroUnidadFuncional FROM #InquilinosUFTemp)
-    )
-    
-    -- Inserto los CBU que estén en el archivo y que no estén en la tabla persona, creando datos ficticios
+    -- SELECT t.CVU_CBU, t.nroUnidadFuncional, t.NombreConsorcio FROM #InquilinosUFTemp t  
+    -- WHERE t.CVU_CBU NOT IN (SELECT uf.cbu FROM ddbba.unidad_funcional uf)
+    -- AND t.CVU_CBU NOT IN (SELECT p.cbu FROM ddbba.persona p)
 
-    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
+    -------------------------------------------------------------
+    -- 3. Insertar persona random para los CBU nuevos
+    -------------------------------------------------------------
+    PRINT 'Insertando personas nuevas...';
+
+    INSERT INTO ddbba.persona (tipo_documento, nombre, mail, telefono, cbu)
     SELECT 
-        ABS(CHECKSUM(NEWID())) % 90000000 + 10000000 AS nro_documento, -- DNI sintético
-        'DNI' AS tipo_documento,
-        CONCAT('Robert', ROW_NUMBER() OVER (ORDER BY i.CVU_CBU)) AS nombre, -- nombre ficticio
-        CONCAT('Plant', ROW_NUMBER() OVER (ORDER BY i.CVU_CBU), '@ejemplo.com') AS mail,
-        CONCAT('11', RIGHT(ABS(CHECKSUM(NEWID())), 8)) AS telefono, -- número genérico
-        i.CVU_CBU AS cbu
-    FROM #InquilinosUFTemp i
-    INNER JOIN rel_cbu r ON r.cbu = i.CVU_CBU;
+        CASE WHEN ABS(CHECKSUM(NEWID())) % 2 = 0 THEN 'DNI' ELSE 'Pasaporte' END AS tipo_documento,
+        CONCAT('Persona_', RIGHT(ABS(CHECKSUM(NEWID())), 5)) AS nombre,
+        CONCAT('persona', RIGHT(ABS(CHECKSUM(NEWID())), 5), '@mail.com') AS mail,
+        CONCAT('+54 11 ', CAST(40000000 + (ABS(CHECKSUM(NEWID())) % 9999999) AS VARCHAR(20))) AS telefono,
+        t.CVU_CBU AS cbu
+    FROM #InquilinosUFTemp t
+    WHERE t.CVU_CBU NOT IN (SELECT uf.cbu FROM ddbba.unidad_funcional uf)
+      AND t.CVU_CBU NOT IN (SELECT p.cbu FROM ddbba.persona p);
 
+    PRINT 'Personas nuevas insertadas.';
 
-    -- UNIDAD FUNCIONAL
-    -- UNIDAD FUNCIONAL
-    -- UNIDAD FUNCIONAL
-    -- UNIDAD FUNCIONAL
+    -------------------------------------------------------------
+    -- 4. Insertar unidades funcionales nuevas
+    -------------------------------------------------------------
+    PRINT 'Insertando unidades funcionales nuevas...';
 
-    --
-    --
-    --
-    --
-    --
+    INSERT INTO ddbba.unidad_funcional (id_unidad_funcional, piso, departamento, cbu, id_consorcio)
+    SELECT
+        t.nroUnidadFuncional AS id_unidad_funcional,
+        t.Piso,
+        t.Departamento,
+        t.CVU_CBU AS cbu,
+        c.id_consorcio
+    FROM #InquilinosUFTemp t
+    INNER JOIN ddbba.consorcio c 
+        ON c.nombre = t.NombreConsorcio
+    WHERE t.CVU_CBU NOT IN (SELECT uf.cbu FROM ddbba.unidad_funcional uf);
+
+    PRINT 'Unidades funcionales nuevas insertadas.';
+
     PRINT '--- Importación finalizada correctamente ---';
 END;
 GO
 
 
 EXEC ddbba.ImportarInquilinosPropietariosUF
-    @RutaArchivo = '/var/opt/mssql/archivo/Inquilino-propietarios-UF.csv';
+    @RutaArchivo = '/var/opt/mssql/archivo/Archivos_tp/Inquilino-propietarios-UF.csv'; 
