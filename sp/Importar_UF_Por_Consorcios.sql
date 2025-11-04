@@ -60,8 +60,8 @@ END
 GO
     
 --PARA EJECUTAR EL SP
-EXEC ddbba.importar_uf_por_consorcios
-		@ruta_archivo='/app/datasets/tp/UF por consorcio.txt'
+EXEC ddbba.sp_importar_uf_por_consorcios
+		@ruta_archivo='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP/UF por consorcio.txt'
 
 --PARA VER SI INSERTO CORRECTAMENTE
 select * from [ddbba].[unidad_funcional]
