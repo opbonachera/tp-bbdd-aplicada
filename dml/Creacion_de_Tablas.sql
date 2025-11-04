@@ -52,7 +52,6 @@ CREATE TABLE ddbba.persona (
     nombre VARCHAR(255),
     mail VARCHAR(255) UNIQUE,
     telefono VARCHAR(25),
-    cbu VARCHAR(50), -- Dato del archivo inquilinos propietarios
     PRIMARY KEY (nro_documento, tipo_documento)
 );
 go
