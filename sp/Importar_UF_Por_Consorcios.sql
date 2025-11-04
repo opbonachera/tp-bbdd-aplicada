@@ -31,11 +31,27 @@ BEGIN
         );';
 
     -- Ejecutar SQL dinámico
-    EXEC sp_executesql @SQL;
+    BEGIN TRY
+        EXEC sp_executesql @sql;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
+        PRINT ERROR_MESSAGE();
+        DROP TABLE IF EXISTS #temp_consorcios;
+        RETURN;
+    END CATCH
 
-	INSERT INTO [ddbba].[unidad_funcional] (id_consorcio,metros_cuadrados,piso,departamento,cochera,baulera,coeficiente,cbu)
+	DELETE t
+	FROM #temp_UF t
+	INNER JOIN ddbba.consorcio c ON c.nombre = t.nom_consorcio
+	INNER JOIN ddbba.unidad_funcional uf 
+		ON uf.id_unidad_funcional = t.num_UF
+		AND uf.id_consorcio = c.id_consorcio;
 
+
+	INSERT INTO [ddbba].[unidad_funcional] (id_unidad_funcional, id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente)
 	SELECT 
+		t.num_UF,
 		c.id_consorcio,
 		(t.m2_UF+t.m2_baulera+t.m2_cochera) as metros_cuadrados, --SE SUMA TODO PARA SABER LA CANTD DE M2 DE ESA UF
 		t.piso,
@@ -46,11 +62,8 @@ BEGIN
 		CASE 
 			WHEN LTRIM(RTRIM(UPPER(t.baulera))) IN ('SI','SÍ') THEN 1 ELSE 0
 		END, --PARA CAMBIAR EL SI O NO POR EL BIT 1 o 0
-		TRY_CAST(REPLACE(t.coeficiente, ',', '.') AS DECIMAL(6,3)) AS coeficiente,
-		RIGHT(REPLACE(CONVERT(VARCHAR(36), NEWID()), '-', ''), 22) AS cbu --genera algo random dsp hay que cambiarlo por el cbu de las personas
-
+		TRY_CAST(REPLACE(t.coeficiente, ',', '.') AS DECIMAL(6,3)) AS coeficiente
 	FROM #temp_UF as t
-
 	INNER JOIN ddbba.consorcio as c
 		ON c.nombre= t.nom_consorcio ---PARA PONER EL LA TABLA DE UF EL ID DE CONSORCIO
 
@@ -59,10 +72,12 @@ BEGIN
 END
 GO
     
---PARA EJECUTAR EL SP
-EXEC ddbba.sp_importar_uf_por_consorcios
-		@ruta_archivo='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP/UF por consorcio.txt'
+-- --PARA EJECUTAR EL SP
+-- EXEC ddbba.sp_importar_uf_por_consorcios
+-- 		@ruta_archivo='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP/UF por consorcio.txt'
 
---PARA VER SI INSERTO CORRECTAMENTE
-select * from [ddbba].[unidad_funcional]
+-- --PARA VER SI INSERTO CORRECTAMENTE
+-- select * from [ddbba].[unidad_funcional]
 
+exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Users\leafnoise\Documents\Ornella\Proyectos\tp-bbdd-aplicada\documentacion\Archivos para el TP\UF por consorcio.txt'
+	

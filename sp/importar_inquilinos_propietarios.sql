@@ -40,19 +40,26 @@ BEGIN
 
     PRINT 'Datos importados en tabla temporal.';
 
-    -- Normalizar el CBU (si vino en notación científica)
+    -- Eliminar duplicados en el archivo
+    ;WITH cte AS (
+        SELECT *,
+               ROW_NUMBER() OVER (PARTITION BY DNI ORDER BY DNI) AS rn
+        FROM #InquilinosTemp
+        )
+    DELETE FROM cte WHERE rn > 1;
+
     UPDATE #InquilinosTemp
     SET CVU_CBU = 
         CASE 
             WHEN CHARINDEX('E', CVU_CBU) > 0 THEN --Detecta si el valor está en notacion científica
                 FORMAT(CAST(CAST(CVU_CBU AS FLOAT) AS DECIMAL(20,0)), '0') -- Convierte el numero en entero sin decimales
             ELSE CVU_CBU
-        END;
-    
+    END;
+
     -- ==========================================================
-    -- 3. Insertar en tabla persona sin duplicar (SIN CBU)
+    -- 3. Insertar en tabla persona sin duplicar
     -- ==========================================================
-    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono)
+    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
     SELECT
         DNI AS nro_documento,
         CASE 
@@ -61,82 +68,15 @@ BEGIN
         END AS tipo_documento,
         TRIM(UPPER(CONCAT(nombre, ' ', Apellido))) AS nombre,
         REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
-        TelefonoContacto AS telefono
+        TelefonoContacto AS telefono,
+        CVU_CBU
     FROM #InquilinosTemp t
     WHERE DNI IS NOT NULL
       AND NOT EXISTS (
           SELECT 1 FROM ddbba.persona p WHERE p.nro_documento = t.DNI
       );
 
+    DROP TABLE #InquilinosTemp
     PRINT 'Personas insertadas (sin duplicados).';
-
-    -- ==========================================================
-    -- 4. Asignar una unidad funcional random única por persona
-    -- ==========================================================
-    ;WITH RandomUF AS (
-        SELECT 
-            uf.id_unidad_funcional,
-            ROW_NUMBER() OVER (ORDER BY NEWID()) AS rn
-        FROM ddbba.unidad_funcional uf
-        WHERE uf.id_unidad_funcional NOT IN (
-            SELECT DISTINCT id_unidad_funcional FROM ddbba.rol
-        )
-    ), -- Ordena las unidades funcionales aun no asignadas de manera random
-    PersonasInsertadas AS (
-        SELECT 
-            p.nro_documento,
-            p.tipo_documento,
-            p.nombre,
-            t.Inquilino,
-            ROW_NUMBER() OVER (ORDER BY NEWID()) AS rn -- Ordena las personas de manera random
-        FROM ddbba.persona p
-        JOIN #InquilinosTemp t ON t.DNI = p.nro_documento
-    )
-    INSERT INTO ddbba.rol (id_unidad_funcional, nro_documento, tipo_documento, nombre_rol, activo, fecha_inicio)
-    SELECT 
-        uf.id_unidad_funcional,
-        p.nro_documento,
-        p.tipo_documento,
-        CASE WHEN p.Inquilino = 1 THEN 'Inquilino' ELSE 'Propietario' END AS nombre_rol,
-        1 AS activo,
-        GETDATE() AS fecha_inicio
-    FROM PersonasInsertadas p
-    JOIN RandomUF uf ON uf.rn = p.rn; -- Junta las unidades funcionales con las personas, por ejemplo si una persona le toco el numero #1 le corresponde el #1 de uf
-
-    PRINT 'Roles insertados y unidades funcionales asignadas.';
-    
-    -- ==========================================================
-    -- 5. Actualizar el CBU en la unidad funcional asignada
-    -- ==========================================================
-    ;WITH update_cbu_cte AS (
-        SELECT 
-            uf.id_unidad_funcional,
-            p.CVU_CBU,
-            ROW_NUMBER() OVER (PARTITION BY p.CVU_CBU ORDER BY uf.id_unidad_funcional) AS rn
-        FROM ddbba.unidad_funcional uf
-        JOIN ddbba.rol r ON r.id_unidad_funcional = uf.id_unidad_funcional
-        JOIN #InquilinosTemp p ON p.DNI = r.nro_documento
-        WHERE p.CVU_CBU IS NOT NULL
-    )
-    UPDATE uf
-    SET uf.cbu = u.CVU_CBU
-    FROM ddbba.unidad_funcional uf
-    JOIN update_cbu_cte u ON u.id_unidad_funcional = uf.id_unidad_funcional
-    WHERE 
-        u.rn = 1
-        AND NOT EXISTS (
-            SELECT 1 
-            FROM ddbba.unidad_funcional existing_uf
-            WHERE existing_uf.cbu =u.CVU_CBU
-        );
-
-    PRINT 'CBU actualizado en unidades funcionales asignadas.';
-
     PRINT '--- Importación finalizada correctamente ---';
 END;
-
--- Ejecución del SP
-EXEC ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = '/var/opt/mssql/archivo/Archivos_tp/Inquilino-propietarios-datos.csv'
-
--- Prueba de inserción en la tabla
-SELECT * FROM ddbba.rol

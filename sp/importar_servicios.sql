@@ -177,25 +177,25 @@ GO
 
 -- EXTRA:
 --chequeo que los datos se hayan insertado correctamente
-SELECT * FROM ddbba.consorcio;
-SELECT * FROM ddbba.expensa;
-SELECT * FROM ddbba.tipo_gasto;
-SELECT count(importe)
-FROM ddbba.gastos_ordinarios
-group by importe;
-GO
+-- SELECT * FROM ddbba.consorcio;
+-- SELECT * FROM ddbba.expensa;
+-- SELECT * FROM ddbba.tipo_gasto;
+-- SELECT count(importe)
+-- FROM ddbba.gastos_ordinarios
+-- group by importe;
+-- GO
 
-select sum(importe)
-from ddbba.gastos_ordinarios
-group by id_tipo_gasto
+-- select sum(importe)
+-- from ddbba.gastos_ordinarios
+-- group by id_tipo_gasto
 
-SELECT 
-    c.nombre AS consorcio,
-    SUM(gaor.importe) AS total_gastos_generales
-FROM ddbba.gastos_ordinarios gaor
-INNER JOIN ddbba.expensa e ON e.id_expensa = gaor.id_expensa
-INNER JOIN ddbba.consorcio c ON c.id_consorcio = e.id_consorcio
-INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = gaor.id_tipo_gasto
-WHERE tg.detalle = 'GASTOS GENERALES'
-GROUP BY c.nombre
-ORDER BY c.nombre;
+-- SELECT 
+--     c.nombre AS consorcio,
+--     SUM(gaor.importe) AS total_gastos_generales
+-- FROM ddbba.gastos_ordinarios gaor
+-- INNER JOIN ddbba.expensa e ON e.id_expensa = gaor.id_expensa
+-- INNER JOIN ddbba.consorcio c ON c.id_consorcio = e.id_consorcio
+-- INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = gaor.id_tipo_gasto
+-- WHERE tg.detalle = 'GASTOS GENERALES'
+-- GROUP BY c.nombre
+-- ORDER BY c.nombre;

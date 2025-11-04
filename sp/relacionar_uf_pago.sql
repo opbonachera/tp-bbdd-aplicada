@@ -2,7 +2,6 @@ CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
 AS
 BEGIN
     SET NOCOUNT ON;
-    
     PRINT 'Iniciando la asociaci�n de pagos...';
 
     -- ==========================================================
@@ -14,7 +13,6 @@ BEGIN
         p.estado = 'asociado'                           -- Cambia el estado
     FROM 
         ddbba.pago AS p
-    
     JOIN 
         ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
     -- Solo actualiza los pagos que a�n no est�n asociados
@@ -26,4 +24,4 @@ BEGIN
 END
 GO
 
-exec  ddbba.sp_relacionar_pagos 
+-- exec  ddbba.sp_relacionar_pagos 
