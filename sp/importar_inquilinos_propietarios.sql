@@ -17,7 +17,7 @@ BEGIN
         DNI BIGINT,
         EmailPersonal VARCHAR(150),
         TelefonoContacto VARCHAR(50),
-        CVU_CBU VARCHAR(50),
+        CVU_CBU VARCHAR(100),
         Inquilino TINYINT
     );
 
@@ -40,6 +40,15 @@ BEGIN
 
     PRINT 'Datos importados en tabla temporal.';
 
+    -- Normalizar el CBU (si vino en notación científica)
+    UPDATE #InquilinosTemp
+    SET CVU_CBU = 
+        CASE 
+            WHEN CHARINDEX('E', CVU_CBU) > 0 THEN --Detecta si el valor está en notacion científica
+                FORMAT(CAST(CAST(CVU_CBU AS FLOAT) AS DECIMAL(20,0)), '0') -- Convierte el numero en entero sin decimales
+            ELSE CVU_CBU
+        END;
+    
     -- ==========================================================
     -- 3. Insertar en tabla persona sin duplicar (SIN CBU)
     -- ==========================================================
@@ -126,6 +135,8 @@ BEGIN
     PRINT '--- Importación finalizada correctamente ---';
 END;
 
-EXEC ddbba.importar_inquilinos_propietarios @ruta_archivo = '/app/datasets/tp/Inquilino-propietarios-datos.csv'
+-- Ejecución del SP
+EXEC ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = '/var/opt/mssql/archivo/Archivos_tp/Inquilino-propietarios-datos.csv'
 
-select * from ddbba.rol
+-- Prueba de inserción en la tabla
+SELECT * FROM ddbba.rol
