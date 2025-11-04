@@ -16,7 +16,7 @@ DROP TABLE ddbba.Proveedores
 DROP TABLE  ddbba.consorcio 
 --
 
-drop database "consorcios"
+--drop database "consorcios"
 create database "consorcios"
 go
 

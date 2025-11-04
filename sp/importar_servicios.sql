@@ -172,7 +172,7 @@ GO
 
 --ejecuto el sp (chequear ruta de archivo)
 EXEC ddbba.sp_importar_servicios 
-	@ruta_archivo = '\app\datasets\tp\Servicios.Servicios.json';
+	@ruta_archivo = 'C:\Users\Dell\Documents\base aplicada\tp-bbdd-aplicada\documentacion\Archivos para el TP\Servicios.Servicios.json';
 GO
 
 -- EXTRA:
@@ -199,4 +199,3 @@ INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = gaor.id_tipo_gasto
 WHERE tg.detalle = 'GASTOS GENERALES'
 GROUP BY c.nombre
 ORDER BY c.nombre;
-
