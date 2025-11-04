@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\sp\\relacionar_uf_pago.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:sp\\relacionar_uf_pago.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\funciones\\fn_normalizar_monto.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:funciones\\fn_normalizar_monto.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
     }
   ],
   "DocumentGroupContainers": [
@@ -19,14 +19,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "relacionar_uf_pago.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.consorcios (DESKTOP-QCVQCIK\\Dell (58))",
-              "DocumentMoniker": "C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\sp\\relacionar_uf_pago.sql",
-              "RelativeDocumentMoniker": "sp\\relacionar_uf_pago.sql",
-              "ToolTip": "C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\sp\\relacionar_uf_pago.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.consorcios (DESKTOP-QCVQCIK\\Dell (58))",
-              "RelativeToolTip": "sp\\relacionar_uf_pago.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.consorcios (DESKTOP-QCVQCIK\\Dell (58))",
+              "Title": "fn_normalizar_monto.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.master (DESKTOP-QCVQCIK\\Dell (55))",
+              "DocumentMoniker": "C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\funciones\\fn_normalizar_monto.sql",
+              "RelativeDocumentMoniker": "funciones\\fn_normalizar_monto.sql",
+              "ToolTip": "C:\\Users\\Dell\\Documents\\base aplicada\\tp-bbdd-aplicada\\funciones\\fn_normalizar_monto.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.master (DESKTOP-QCVQCIK\\Dell (55))",
+              "RelativeToolTip": "funciones\\fn_normalizar_monto.sql - DESKTOP-QCVQCIK\\SQLEXPRESS.master (DESKTOP-QCVQCIK\\Dell (55))",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2025-11-02T22:19:54.279Z",
-              "EditorCaption": " - DESKTOP-QCVQCIK\\SQLEXPRESS.consorcios (DESKTOP-QCVQCIK\\Dell (58))"
+              "WhenOpened": "2025-11-04T01:53:31.606Z",
+              "EditorCaption": " - DESKTOP-QCVQCIK\\SQLEXPRESS.master (DESKTOP-QCVQCIK\\Dell (55))"
             }
           ]
         }

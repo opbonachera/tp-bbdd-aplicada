@@ -17,33 +17,8 @@ SET @resultado = ddbba.fn_limpiar_espacios (LTRIM(RTRIM(ISNULL(@valor, '')))); -
 SET @resultado = REPLACE(@resultado, '$', ''); --saca $ (si lo tuviese)
 SET @resultado = REPLACE(@resultado, ',', '');
 SET @resultado = REPLACE(@resultado, '.', '');
-SET @resultado = STUFF(@resultado,len(@resultado)-2,0,'.');
---2) Identificamos cual es el separador decimal mediante los distintos casos
-/*DECLARE @posComa INT = CHARINDEX (',', REVERSE(@resultado)); --buscamos la ultima coma y punto en el texto (invirtiendolo y devolviendo la posicion para encontrar el separador del final)
-DECLARE @posPunto INT = CHARINDEX ('.', REVERSE(@resultado));
-
---3) Eliminamos el separador de miles y cambiamos decimal a punto 
-IF @posComa = 0 AND @posPunto = 0
-BEGIN
-	--CASO 1: No hay separadores -> convierto a numero directamente
-	SET @resultado = @resultado;
-END
-ELSE IF (@posComa > 0) AND (@posComa < @posPunto) 
-BEGIN
-	--CASO 2: 12.530,25 -> convierto a 12530.25
-	SET @entera = LEFT(@resultado, LEN(@resultado) - @posComa);
-	SET @decimal = RIGHT(@resultado, @posComa - 1);
-	SET @entera = REPLACE(@entera, '.', ''); --saco punto de miles
-	SET @entera = REPLACE(@entera, ',', ''); --cambio coma decimal por punto
-	SET @resultado=@entera+'.'+@decimal;
-END
-ELSE IF @posPunto > 0
-BEGIN
-	--CASO 3: 12,530.25 -> 12530.25
-	SET @resultado = REPLACE(@resultado, ',', ''); --elimino coma de miles
-END
-
---4) Devolvemos el numero normalizado*/
+--1) Agrega el punto decimal
+SET @resultado = STUFF(@resultado,len(@resultado)-1,0,'.');
 RETURN ISNULL(TRY_CAST(@resultado AS DECIMAL(12,2)), 0.00); --trata de castear el texto a decimal, si no puede, devuelve null y lo transformamos a 0.00
 END
 GO
