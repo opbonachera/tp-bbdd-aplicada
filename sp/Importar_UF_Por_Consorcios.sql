@@ -41,48 +41,23 @@ BEGIN
         RETURN;
     END CATCH
 	
-	SELECT *
-	FROM #temp_UF t
-	LEFT JOIN ddbba.consorcio c ON c.nombre = t.nom_consorcio
-	WHERE c.id_consorcio IS NULL;
-
-	DELETE t
-	FROM #temp_UF t
-	INNER JOIN ddbba.consorcio c ON c.nombre = t.nom_consorcio
-	INNER JOIN ddbba.unidad_funcional uf 
-		ON uf.id_unidad_funcional = t.num_UF
-		AND uf.id_consorcio = c.id_consorcio;
-
-
-	INSERT INTO [ddbba].[unidad_funcional] (id_unidad_funcional, id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente)
-	SELECT 
-		t.num_UF,
-		c.id_consorcio,
-		(t.m2_UF+t.m2_baulera+t.m2_cochera) as metros_cuadrados, --SE SUMA TODO PARA SABER LA CANTD DE M2 DE ESA UF
-		t.piso,
-		t.departamento,
-		CASE 
-			WHEN LTRIM(RTRIM(UPPER(t.cochera))) IN ('SI','SÍ') THEN 1 ELSE 0
-		END,
-		CASE 
-			WHEN LTRIM(RTRIM(UPPER(t.baulera))) IN ('SI','SÍ') THEN 1 ELSE 0
-		END, --PARA CAMBIAR EL SI O NO POR EL BIT 1 o 0
-		TRY_CAST(REPLACE(t.coeficiente, ',', '.') AS DECIMAL(6,3)) AS coeficiente
-	FROM #temp_UF as t
-	INNER JOIN ddbba.consorcio as c
-		ON c.nombre= t.nom_consorcio ---PARA PONER EL LA TABLA DE UF EL ID DE CONSORCIO
+	INSERT INTO [ddbba].[unidad_funcional] (
+    id_unidad_funcional, id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente
+    )
+    SELECT  
+        t.num_UF,
+        c.id_consorcio,
+        (t.m2_UF + t.m2_baulera + t.m2_cochera),
+        t.piso,
+        t.departamento,
+        CASE WHEN UPPER(LTRIM(RTRIM(t.cochera))) IN ('SI','SÍ') THEN 1 ELSE 0 END,
+        CASE WHEN UPPER(LTRIM(RTRIM(t.baulera))) IN ('SI','SÍ') THEN 1 ELSE 0 END,
+        TRY_CAST(REPLACE(t.coeficiente, ',', '.') AS DECIMAL(6,3))
+    FROM #temp_UF AS t
+    INNER JOIN ddbba.consorcio AS c
+        ON LTRIM(RTRIM(UPPER(c.nombre))) = LTRIM(RTRIM(UPPER(t.nom_consorcio)))
 
 	--ELIMINO LA TABLA TEMPORAL
 	DROP TABLE #temp_UF
 END
 GO
-    
--- --PARA EJECUTAR EL SP
--- EXEC ddbba.sp_importar_uf_por_consorcios
--- 		@ruta_archivo='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP/UF por consorcio.txt'
-
--- --PARA VER SI INSERTO CORRECTAMENTE
--- select * from [ddbba].[unidad_funcional]
-
-exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Users\leafnoise\Documents\Ornella\Proyectos\tp-bbdd-aplicada\documentacion\Archivos para el TP\UF por consorcio.txt'
-	
