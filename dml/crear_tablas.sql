@@ -170,8 +170,9 @@ CREATE TABLE ddbba.envio_expensa (
 GO
 
 -- Tabla pago
+
 CREATE TABLE ddbba.pago (
-    id_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_pago INT PRIMARY KEY,
     id_unidad_funcional INT,
     id_consorcio INT,
     id_expensa INT,
