@@ -37,9 +37,14 @@ BEGIN
     BEGIN CATCH
         PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
         PRINT ERROR_MESSAGE();
-        DROP TABLE IF EXISTS #temp_consorcios;
+        DROP TABLE IF EXISTS #temp_UF;
         RETURN;
     END CATCH
+	
+	SELECT *
+	FROM #temp_UF t
+	LEFT JOIN ddbba.consorcio c ON c.nombre = t.nom_consorcio
+	WHERE c.id_consorcio IS NULL;
 
 	DELETE t
 	FROM #temp_UF t
