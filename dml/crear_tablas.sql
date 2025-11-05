@@ -80,7 +80,7 @@ CREATE TABLE ddbba.unidad_funcional (
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,
     coeficiente FLOAT,
-    saldo_anterior DECIMAL(12,2) DEFAULT 0.00,
+    saldo_anterior decimal(12,3) DEFAULT 0.00,
     cbu VARCHAR(22),
     prorrateo FLOAT DEFAULT 0,
     CONSTRAINT PK_unidad_funcional PRIMARY KEY (id_unidad_funcional, id_consorcio),
@@ -124,7 +124,7 @@ CREATE TABLE ddbba.gastos_ordinarios (
     id_tipo_gasto INT,
     detalle VARCHAR(255),
     nro_factura VARCHAR(50),
-    importe DECIMAL(12,2),
+    importe decimal(12,3),
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
     FOREIGN KEY (id_tipo_gasto) REFERENCES ddbba.tipo_gasto(id_tipo_gasto)
 );
@@ -137,7 +137,7 @@ CREATE TABLE ddbba.gasto_extraordinario (
     detalle VARCHAR(255),
     total_cuotas INT DEFAULT 1,
     pago_en_cuotas BIT DEFAULT 0,
-    importe_total DECIMAL(12,2),
+    importe_total decimal(12,3),
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE
 );
 GO
@@ -177,7 +177,7 @@ CREATE TABLE ddbba.pago (
     id_consorcio INT,
     id_expensa INT,
     fecha_pago DATETIME,
-    monto DECIMAL(12,2),
+    monto decimal(12,3),
     cbu_origen VARCHAR(22),
     estado VARCHAR(50),
     FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio) ON DELETE CASCADE,
@@ -188,12 +188,12 @@ GO
 -- Tabla estado_financiero
 CREATE TABLE ddbba.estado_financiero (
     id_expensa INT PRIMARY KEY,
-    saldo_anterior DECIMAL(12,2),
-    ingresos_en_termino DECIMAL(12,2),
-    ingresos_adelantados DECIMAL(12,2),
-    ingresos_adeudados DECIMAL(12,2),
-    egresos_del_mes DECIMAL(12,2),
-    saldo_cierre DECIMAL(12,2),
+    saldo_anterior decimal(12,3),
+    ingresos_en_termino decimal(12,3),
+    ingresos_adelantados decimal(12,3),
+    ingresos_adeudados decimal(12,3),
+    egresos_del_mes decimal(12,3),
+    saldo_cierre decimal(12,3),
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE
 );
 GO

@@ -10,7 +10,8 @@ BEGIN
     UPDATE p
     SET 
         p.id_unidad_funcional = uf.id_unidad_funcional, -- Asigna el ID de la UF
-        p.estado = 'asociado'                           -- Cambia el estado
+        p.estado = 'asociado',                           -- Cambia el estado
+        p.id_consorcio = uf.id_consorcio
     FROM 
         ddbba.pago AS p
     JOIN 
