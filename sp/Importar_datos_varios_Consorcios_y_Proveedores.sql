@@ -84,7 +84,7 @@ EXEC ddbba.sp_importar_consorcios
 GO
 --Para ejecutar el SP
 EXEC ddbba.sp_importar_consorcios
-	@NomArch='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP\datos_varios(Consorcios).csv' --aca va la ruta de donde tengan el archivo
+	@NomArch='C:\Users\Usuario\Desktop\TPBASEDDATOS\documentacion\Archivos para el TP\datos_varios(Consorcios).csv' --aca va la ruta de donde tengan el archivo(si o si tiene que ser en una carpeta disco c para los permisos)
 
 
 --Para ver si se inserto todo correctamente
