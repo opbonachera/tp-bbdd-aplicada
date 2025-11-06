@@ -12,10 +12,9 @@ BEGIN
         p.id_unidad_funcional = uf.id_unidad_funcional, -- Asigna el ID de la UF
         p.estado = 'asociado',                           -- Cambia el estado
         p.id_consorcio = uf.id_consorcio
-    FROM 
-        ddbba.pago AS p
-    JOIN 
-        ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
+    FROM ddbba.pago AS p
+    JOIN ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
+    JOIN ddbba.consorcio AS c on c.id_consorcio = uf.id_consorcio
     -- Solo actualiza los pagos que a�n no est�n asociados
     WHERE 
         p.id_unidad_funcional IS NULL;
