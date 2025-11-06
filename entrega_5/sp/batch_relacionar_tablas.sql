@@ -129,7 +129,7 @@ GO
 ---------------------------------------------------------------
 ----ASIGNA EL PRORRATEO
 
-CREATE OR ALTER PROCEDURE ddbba.GenerarProrrateo
+CREATE OR ALTER PROCEDURE ddbba.sp_actualizar_prorrateo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -148,7 +148,7 @@ BEGIN
     PRINT ' Prorrateo actualizado correctamente para todos los consorcios existentes.';
 END;
 
-EXEC ddbba.GenerarProrrateo;
+EXEC ddbba.sp_actualizar_prorrateo;
 
 SELECT departamento, metros_cuadrados, prorrateo
 FROM ddbba.unidad_funcional
