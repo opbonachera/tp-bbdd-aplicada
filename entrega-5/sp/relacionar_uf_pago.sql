@@ -6,7 +6,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    PRINT 'Iniciando la asociación de pagos...';
+    PRINT '---- Iniciando la asociación de pagos... ----';
 
     -- 1️ Asociar pagos con su unidad funcional según el CBU
     UPDATE p
@@ -42,6 +42,6 @@ BEGIN
     WHERE p.id_expensa IS NULL;
 
     PRINT CAST(@@ROWCOUNT AS VARCHAR) + ' pagos asociados a expensas.';
-
+    PRINT '---- Finaliza la asociación de pagos... ----';
 END;
 GO

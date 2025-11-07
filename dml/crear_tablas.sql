@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS ddbba.proveedores;
 DROP TABLE IF EXISTS ddbba.consorcio;
 GO
 
+
 -- Crear base y esquema
 CREATE DATABASE consorcios;
 GO

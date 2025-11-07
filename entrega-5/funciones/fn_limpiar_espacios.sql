@@ -1,3 +1,5 @@
+use "consorcios"
+go
 CREATE OR ALTER FUNCTION ddbba.fn_limpiar_espacios (@valor VARCHAR(MAX))
 RETURNS VARCHAR(MAX)
 AS
