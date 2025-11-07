@@ -1,6 +1,3 @@
-
-
-
 CREATE OR ALTER PROCEDURE ddbba.sp_actualizar_prorrateo
 AS
 BEGIN
@@ -19,3 +16,6 @@ BEGIN
 
 END;
 
+exec ddbba.sp_actualizar_prorrateo
+
+select * from ddbba.unidad_funcional

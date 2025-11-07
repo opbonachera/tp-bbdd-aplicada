@@ -1,3 +1,6 @@
+use "consorcios"
+go
+
 CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
