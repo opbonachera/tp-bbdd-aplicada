@@ -66,3 +66,5 @@ EXEC ddbba.sp_importar_uf_por_consorcios
 --PARA VER SI INSERTO CORRECTAMENTE
 select * from [ddbba].[unidad_funcional]
 
+
+
