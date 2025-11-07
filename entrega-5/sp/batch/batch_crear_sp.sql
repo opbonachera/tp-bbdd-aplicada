@@ -21,6 +21,7 @@ BEGIN
         ON uf.id_consorcio = tot.id_consorcio;
 
 END;
+GO
 -- ==========================================================
 -- IMPORTA CONSORCIOS
 -- ========================================================== 
@@ -96,6 +97,7 @@ BEGIN
 -- 5. Elimino la tabla temporal
 	DROP TABLE #temp_consorcios
 END
+GO
 -- ==========================================================
 -- IMPORTA INQUILINOS Y PROPIETARIOS. INSERTA EN LA TABLA DE PERSONAS
 -- ========================================================== 
@@ -181,6 +183,7 @@ BEGIN
     PRINT 'Personas insertadas (sin duplicados).';
     PRINT '--- Importación finalizada correctamente ---';
 END;
+GO
 -- ==========================================================
 -- IMPORTA PAGOS
 -- ========================================================== 
