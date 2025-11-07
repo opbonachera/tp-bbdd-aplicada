@@ -826,12 +826,19 @@ GO
 create or alter procedure ddbba.sp_importar_archivos
 as
 begin	
-	--exec ddbba.sp_importar_consorcios_csv @ruta_archivo = '/app/datasets/tp/datosvarios_consorcios.csv'
-	exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\Importar_TP\pagos_consorcios.csv'
-	exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo =  'C:\Importar_TP\UF por consorcio.txt'
-	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = '‪C:\Importar_TP\Inquilino-propietarios-datos.csv'
-	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Importar_TP\Servicios.Servicios.json', @anio=2025
-	
+	exec ddbba.sp_importar_consorcios @NomArch = 'C:\Archivos para el TP\datos varios.xlsx'
+	exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el TP\pagos_consorcios.csv'
+	exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo =  'C:\Archivos para el TP\UF por consorcio.txt'
+	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el TP\Inquilino-propietarios-datos.csv'
+	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el TP\Servicios.Servicios.json', @anio=2025
+    exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el TP\Inquilino-propietarios-UF.csv'
+    exec ddbba.sp_relacionar_pagos 
+	exec ddbba.sp_actualizar_prorrateo 
 end
 
 exec ddbba.sp_importar_archivos
+
+select count(*) from ddbba.unidad_funcional -- revisar que no intente insertar duplicates
+select count(*) from ddbba.persona
+select count(*) from ddbba.gastos_ordinarios
+select count(*) from ddbba.rol

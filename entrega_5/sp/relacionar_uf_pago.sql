@@ -1,12 +1,12 @@
+use "consorcios"
+go
+
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
 AS
 BEGIN
     SET NOCOUNT ON;
     PRINT 'Iniciando la asociaci�n de pagos...';
-
-    -- ==========================================================
-    -- 1. Actualiza el id de la unidad funcional cuando el CBU del pago coincide con el CBU de la tabla de uf
-    -- ==========================================================
+    --Actualiza el id de la unidad funcional cuando el CBU del pago coincide con el CBU de la tabla de uf
     UPDATE p
     SET 
         p.id_unidad_funcional = uf.id_unidad_funcional, -- Asigna el ID de la UF
@@ -15,7 +15,7 @@ BEGIN
     FROM ddbba.pago AS p
     JOIN ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
     JOIN ddbba.consorcio AS c on c.id_consorcio = uf.id_consorcio
-    -- Solo actualiza los pagos que a�n no est�n asociados
+    -- Solo actualiza los pagos que aun no estan
     WHERE 
         p.id_unidad_funcional IS NULL;
     

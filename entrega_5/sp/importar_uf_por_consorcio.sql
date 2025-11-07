@@ -1,4 +1,7 @@
 --IMPORTAR UF POR CONSORCIOS
+use "consorcios"
+go
+
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_uf_por_consorcios
     @ruta_archivo NVARCHAR(255)
 AS

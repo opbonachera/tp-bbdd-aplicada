@@ -92,10 +92,6 @@ BEGIN
 END;
 GO
 
-exec ddbba.sp_relacionar_inquilinos_uf  @ruta_archivo = 'C:\Importar_TP\Inquilino-propietarios-UF.csv'
-select * from ddbba.unidad_funcional
-
-
 ----------------------------------------------------------------------------------------------------------------
 --Asocia pagos
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
@@ -123,8 +119,6 @@ BEGIN
    
 END
 GO
-
--- exec  ddbba.sp_relacionar_pagos 
 
 ---------------------------------------------------------------
 ----ASIGNA EL PRORRATEO

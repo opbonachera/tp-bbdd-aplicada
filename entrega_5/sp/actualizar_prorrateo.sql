@@ -17,10 +17,5 @@ BEGIN
     ) AS tot
         ON uf.id_consorcio = tot.id_consorcio;
 
-    PRINT ' Prorrateo actualizado correctamente para todos los consorcios existentes.';
 END;
 
-EXEC ddbba.sp_actualizar_prorrateo;
-
-SELECT departamento, metros_cuadrados, prorrateo
-FROM ddbba.unidad_funcional

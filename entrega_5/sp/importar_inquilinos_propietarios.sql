@@ -1,3 +1,6 @@
+use "consorcios"
+go
+
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_inquilinos_propietarios
     @ruta_archivo VARCHAR(4000)
 AS

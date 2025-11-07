@@ -1,3 +1,5 @@
+use "consorcios"
+go
 
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
     @ruta_archivo NVARCHAR(MAX)
@@ -71,5 +73,3 @@ BEGIN
     DROP TABLE #temp_pagos;
 END;
 GO
-
--- exec ddbba.sp_importar_pagos @ruta_archivo = '/app/datasets/tp/pagos_consorcios.csv'

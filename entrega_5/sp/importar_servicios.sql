@@ -1,3 +1,6 @@
+use "consorcios"
+go
+
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_servicios
 	@ruta_archivo NVARCHAR(500),
     @Anio INT = 2025 --Parametrizamos el anio para poder cambiarlo mas facilmente si lo necesitamos
@@ -168,34 +171,3 @@ BEGIN
 
 END
 GO
-
-
---ejecuto el sp (chequear ruta de archivo)
-EXEC ddbba.sp_importar_servicios 
-	@ruta_archivo = 'C:\Users\Dell\Documents\base aplicada\tp-bbdd-aplicada\documentacion\Archivos para el TP\Servicios.Servicios.json';
-GO
-
--- EXTRA:
---chequeo que los datos se hayan insertado correctamente
--- SELECT * FROM ddbba.consorcio;
--- SELECT * FROM ddbba.expensa;
--- SELECT * FROM ddbba.tipo_gasto;
--- SELECT count(importe)
--- FROM ddbba.gastos_ordinarios
--- group by importe;
--- GO
-
--- select sum(importe)
--- from ddbba.gastos_ordinarios
--- group by id_tipo_gasto
-
--- SELECT 
---     c.nombre AS consorcio,
---     SUM(gaor.importe) AS total_gastos_generales
--- FROM ddbba.gastos_ordinarios gaor
--- INNER JOIN ddbba.expensa e ON e.id_expensa = gaor.id_expensa
--- INNER JOIN ddbba.consorcio c ON c.id_consorcio = e.id_consorcio
--- INNER JOIN ddbba.tipo_gasto tg ON tg.id_tipo_gasto = gaor.id_tipo_gasto
--- WHERE tg.detalle = 'GASTOS GENERALES'
--- GROUP BY c.nombre
--- ORDER BY c.nombre;
