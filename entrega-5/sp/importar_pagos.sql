@@ -1,3 +1,5 @@
+use "consorcios"
+go
 
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
     @ruta_archivo NVARCHAR(MAX)
@@ -31,14 +33,24 @@ BEGIN
             ROWTERMINATOR = ''\n''
         );';
 
-    EXEC sp_executesql @sql;
+    -- 3. Ejecutar la importaciÃ³n a la tabla temporal
+    BEGIN TRY
+        EXEC sp_executesql @sql;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
+        PRINT ERROR_MESSAGE();
+        DROP TABLE IF EXISTS #temp_consorcios;
+        RETURN;
+    END CATCH
 
     -- ==========================================================
-    -- 3. Se eliminan los registros vacíos
+    -- 3. Se eliminan los registros vacï¿½os
     -- ==========================================================
     DELETE FROM #temp_pagos
     WHERE fecha IS NULL OR valor IS NULL OR id_pago IS NULL;
-    PRINT 'Inserción de pagos en la tabla final'
+    PRINT 'Inserciï¿½n de pagos en la tabla final'
+    
     -- ==========================================================
     -- 4. Se insertan los datos del archivo en la tabla de pagos evitando duplicados
     -- ==========================================================
@@ -56,10 +68,8 @@ BEGIN
         WHERE p.id_pago = #temp_pagos.id_pago
     );
 
-    PRINT 'Finaliza la importación del archivo de pagos'
+    PRINT 'Finaliza la importaciï¿½n del archivo de pagos'
 
     DROP TABLE #temp_pagos;
 END;
 GO
-
-exec ddbba.sp_importar_pagos @ruta_archivo = '/app/datasets/tp/pagos_consorcios.csv'
