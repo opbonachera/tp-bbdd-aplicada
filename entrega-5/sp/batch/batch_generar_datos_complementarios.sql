@@ -331,7 +331,52 @@ BEGIN
     PRINT 'Se generaron los tipos de envío predefinidos.';
 END
 GO
+---------------------------------------------------------------------------
+-- Generar vencimientos de expensas
 
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_vencimientos_expensas
+    @dias_primer_vencimiento INT = 15,  -- Días después de emisión para 1er vencimiento
+    @dias_segundo_vencimiento INT = 20   -- Días después de emisión para 2do vencimiento
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Actualizar solo los registros que tienen fecha_emision pero no tienen vencimientos
+        UPDATE ddbba.expensa
+        SET 
+            primer_vencimiento = DATEADD(DAY, @dias_primer_vencimiento, fecha_emision),
+            segundo_vencimiento = DATEADD(DAY, @dias_segundo_vencimiento, fecha_emision)
+        WHERE 
+            fecha_emision IS NOT NULL
+            AND (primer_vencimiento IS NULL OR segundo_vencimiento IS NULL);
+        
+        -- Retornar cantidad de registros actualizados
+        DECLARE @registros_actualizados INT = @@ROWCOUNT;
+        
+        COMMIT TRANSACTION;
+        
+        -- Mensaje de resultado
+        SELECT 
+            @registros_actualizados AS RegistrosActualizados,
+            'Vencimientos generados correctamente' AS Mensaje;
+            
+    END TRY
+    BEGIN CATCH
+        -- En caso de error, hacer rollback
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        
+        -- Retornar información del error
+        SELECT 
+            ERROR_NUMBER() AS ErrorNumero,
+            ERROR_MESSAGE() AS ErrorMensaje,
+            ERROR_LINE() AS ErrorLinea;
+    END CATCH
+END;
+GO
 -------------------------------------------------
 --este es el orden con el que se tiene que ejecutar casa SP
 -- Ejecución de todos los SP
@@ -342,4 +387,7 @@ EXEC ddbba.sp_GenerarEstadosFinancieros @CantidadRegistros = 10;
 EXEC ddbba.sp_GenerarGastosExtraordinarios @CantidadRegistros = 10;
 EXEC ddbba.sp_GenerarCuotas ;
 EXEC ddbba.sp_GenerarPagos @CantidadRegistros = 10;
+EXEC ddbba.sp_generar_vencimientos_expensas 
+EXEC ddbba.sp_generar_detalle_expensas_por_uf
+EXEC ddbba.sp_generar_estado_financiero
 
