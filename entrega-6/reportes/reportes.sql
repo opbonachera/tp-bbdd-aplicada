@@ -184,9 +184,9 @@ END;
 GO
 
 --TEST 
-EXEC ddbba.SP_Reporte_Top5_Meses_Gastos;-- sin parametros de entrada
-EXEC ddbba.SP_Reporte_Top5_Meses_Gastos @id_consorcio = 5; --mandadole un consorcio
-EXEC ddbba.SP_Reporte_Top5_Meses_Gastos @AnioDesde = 2025, @AnioHasta = 2025; --mandadole años
-EXEC ddbba.SP_Reporte_Top5_Meses_Gastos @id_consorcio = 1, @AnioDesde = 2025, @AnioHasta = 2025;--mandadole todos los parametos
+EXEC ddbba.sp_reporte_4;-- sin parametros de entrada
+EXEC ddbba.sp_reporte_4 @id_consorcio = 5; --mandadole un consorcio
+EXEC ddbba.sp_reporte_4 @AnioDesde = 2025, @AnioHasta = 2025; --mandadole años
+EXEC ddbba.sp_reporte_4 @id_consorcio = 1, @AnioDesde = 2025, @AnioHasta = 2025;--mandadole todos los parametos
 
 
