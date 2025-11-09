@@ -1,6 +1,3 @@
-use "consorcios"
-go
-
 CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
@@ -15,28 +12,29 @@ BEGIN
 */
 
     DECLARE @resultado NVARCHAR(50);
-    DECLARE @tieneSeparador BIT;
+    DECLARE @tieneSeparador TINYINT;
 
     -- 1) Limpiamos caracteres no deseados
     SET @resultado = ddbba.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
     SET @resultado = REPLACE(@resultado, '$', ''); --Saca el $ (si lo tuviese)
 
     -- 2) Detectamos si tiene separador decimal
-    SET @tieneSeparador = CASE 
-                            WHEN CHARINDEX(',', @resultado) > 0 OR CHARINDEX('.', @resultado) > 0 --CHARINDEX nos busca la primer aparicion del caracter, si es > 0 -> quiere decir que hay por lo menos UNO de los separadores (ya sea coma o punto)
-                            THEN 1 
-                            ELSE 0 
-                          END;
+    SET @resultado = REPLACE(@resultado,',','.');
+    SET @tieneSeparador = CHARINDEX('.', REVERSE(@resultado)); --CHARINDEX nos busca la primer aparicion del caracter, si es > 0 -> quiere decir que hay por lo menos UNO de los separadores (ya sea coma o punto)
 
     -- 3) Eliminamos todos los separadores
-    SET @resultado = REPLACE(@resultado, ',', '');
-    SET @resultado = REPLACE(@resultado, '.', '');
+   
+    
 
     -- 4) Si tenia separador, insertamos el punto decimal
-    IF @tieneSeparador = 1 AND LEN(@resultado) > 2 --En el caso de que tenga tres digitos o mas,
+    IF @tieneSeparador = 3 --En el caso de que tenga tres digitos o mas,
+    BEGIN
+        SET @resultado = REPLACE(@resultado, '.', '');
         SET @resultado = STUFF(@resultado, LEN(@resultado) - 1, 0, '.'); --apuntamos a la posicion justo antes de los ultimos dos digitos (asumimos dos digitos decimales)
     --Si el numero tiene uno o dos digitos, entonces no entra al if y cuando castee solo le agrega el .00
-
+    END
+    ELSE
+        SET @resultado = REPLACE(@resultado, '.', '');
     -- 5) Devolvemos el número normalizado
     RETURN ISNULL(TRY_CAST(@resultado AS DECIMAL(12,2)), 0.00); --Trata de castear el texto a decimal, si no puede, devuelve null y lo transformamos a 0.00
 END
