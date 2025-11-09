@@ -1,4 +1,4 @@
-/*se consideran como datos sensibles todos los datos que den informacion sobre la persna*/
+/*se consideran como datos sensibles todos los datos que den informacion sobre la persona*/
 /*solamente tome como dato sensible el cbu de la persona ,ya que ,
 nosotros tenemos DNI como PK y para cifrarla tendriamos que borrar la tabla y cambiar la PK y cambiar todas las FK */
 /*en la tabla persona cifre el cbu,mail y telefono y en la tbal pago y uf solo el cbu*/
@@ -20,7 +20,7 @@ END;
 EXEC ddbba.sp_alter_table
 
 
---esto es para cifrar el cbu da la tabla pagos e uf
+--esto es para cifrar los datos de las tres tablas
 CREATE OR ALTER PROCEDURE ddbba.sp_cifrado_tablas
 AS
 BEGIN
@@ -87,8 +87,17 @@ SELECT
 	estado
 FROM ddbba.pago;
 
+
 SELECT 
 	id_unidad_funcional,
 	id_consorcio,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu))
-FROM ddbba.unidad_funcional
+	metros_cuadrados,
+	piso,
+	departamento,
+	cochera,
+	baulera,
+	coeficiente,
+	saldo_anterior,
+    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu)),
+	prorrateo
+FROM ddbba.unidad_funcional;
