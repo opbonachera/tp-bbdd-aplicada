@@ -10,3 +10,11 @@ ON ddbba.gastos_ordinarios (id_expensa, importe);
 
 CREATE INDEX IX_gasto_extraordinario_expensa 
 ON ddbba.gasto_extraordinario (id_expensa, importe_total);
+
+
+-- Indices para el reporte 6 
+
+-- Índice para optimizar el filtrado y orden de los pagos por UF, ID expensa y fecha
+CREATE INDEX IX_pago_consorcio_uf_fecha
+ON ddbba.pago (id_unidad_funcional, id_expensa, fecha_pago);
+GO 
