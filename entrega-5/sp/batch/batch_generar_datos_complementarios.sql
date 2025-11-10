@@ -1,5 +1,6 @@
 /*Generacion da los datos faltantes*/
 
+
 --------------------------------------------------------------
 -- Generar Cuotas Random
 CREATE OR ALTER PROCEDURE ddbba.sp_GenerarCuotas
@@ -24,7 +25,7 @@ END
 ----------------------------------------------------------------------------------------------------
 -- Generar Envíos de Expensas Random
 CREATE OR ALTER PROCEDURE ddbba.sp_GenerarEnviosExpensas
-    @CantidadRegistros INT = 10
+    @CantidadRegistros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -84,100 +85,13 @@ BEGIN
     PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' envíos de expensas random.';
 END
 GO
-------------------------------------------------------------------------------------------
--- Generar Estados Financieros Random
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarEstadosFinancieros
-    @CantidadRegistros INT = 10
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @i INT = 1;
-    DECLARE @IdExpensa INT;
-    DECLARE @SaldoAnterior DECIMAL(18,2);
-    DECLARE @IngresosTermino DECIMAL(18,2);
-    DECLARE @IngresosAdelantados DECIMAL(18,2);
-    DECLARE @IngresosAdeudados DECIMAL(18,2);
-    DECLARE @EgresosMes DECIMAL(18,2);
-    DECLARE @SaldoCierre DECIMAL(18,2);
-    DECLARE @ExpensasDisponibles INT;
-    
-    -- Verificar cuántas expensas sin estado financiero hay disponibles
-    SELECT @ExpensasDisponibles = COUNT(*)
-    FROM ddbba.expensa e
-    WHERE NOT EXISTS (
-        SELECT 1 
-        FROM ddbba.estado_financiero ef 
-        WHERE ef.id_expensa = e.id_expensa
-    );
-    
-    IF @ExpensasDisponibles = 0
-    BEGIN
-        PRINT 'No hay expensas disponibles sin estado financiero.';
-        RETURN;
-    END
-    
-    IF @CantidadRegistros > @ExpensasDisponibles
-    BEGIN
-        PRINT 'Solo hay ' + CAST(@ExpensasDisponibles AS VARCHAR) + ' expensas disponibles. Se generarán ' + CAST(@ExpensasDisponibles AS VARCHAR) + ' estados financieros.';
-        SET @CantidadRegistros = @ExpensasDisponibles;
-    END
-    
-    WHILE @i <= @CantidadRegistros
-    BEGIN
-        -- Seleccionar una expensa que NO tenga estado financiero
-        SET @IdExpensa = (
-            SELECT TOP 1 e.id_expensa 
-            FROM ddbba.expensa e
-            WHERE NOT EXISTS (
-                SELECT 1 
-                FROM ddbba.estado_financiero ef 
-                WHERE ef.id_expensa = e.id_expensa
-            )
-            ORDER BY NEWID()
-        );
-        
-        -- Generar montos random entre -50000 y 200000
-        SET @SaldoAnterior = ROUND(RAND() * 100000 - 50000, 2);
-        SET @IngresosTermino = ROUND(RAND() * 150000, 2);
-        SET @IngresosAdelantados = ROUND(RAND() * 50000, 2);
-        SET @IngresosAdeudados = ROUND(RAND() * 80000, 2);
-        SET @EgresosMes = ROUND(RAND() * 120000, 2);
-        
-        -- Calcular saldo de cierre
-        SET @SaldoCierre = @SaldoAnterior + @IngresosTermino + @IngresosAdelantados - @EgresosMes;
-        
-        INSERT INTO ddbba.estado_financiero (
-            id_expensa, 
-            saldo_anterior, 
-            ingresos_en_termino, 
-            ingresos_adelantados, 
-            ingresos_adeudados, 
-            egresos_del_mes, 
-            saldo_cierre
-        )
-        VALUES (
-            @IdExpensa, 
-            @SaldoAnterior, 
-            @IngresosTermino, 
-            @IngresosAdelantados,
-            @IngresosAdeudados, 
-            @EgresosMes, 
-            @SaldoCierre
-        );
-        
-        SET @i = @i + 1;
-    END
-    
-    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' estados financieros random.';
-END
-GO
+
 
 ----------------------------------------------------------------------------------------
 --Generar Gastos Extraordinarios Random
 
 CREATE OR ALTER PROCEDURE ddbba.sp_GenerarGastosExtraordinarios
-    @CantidadRegistros INT = 10
+    @CantidadRegistros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -225,7 +139,7 @@ GO
 --Generar Pagos Random
 
 CREATE OR ALTER PROCEDURE ddbba.sp_GenerarPagos
-    @CantidadRegistros INT = 10
+    @CantidadRegistros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -309,10 +223,11 @@ BEGIN
 END
 GO
 
+
 ----------------------------------------------------------------
 --Generar Tipos de Envío Random
 
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarTiposEnvio
+CREATE OR ALTER PROCEDURE ddbba.sp_GenerarTiposEnvioRandom
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -335,8 +250,8 @@ GO
 -- Generar vencimientos de expensas
 
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_vencimientos_expensas
-    @dias_primer_vencimiento INT = 15,  -- Días después de emisión para 1er vencimiento
-    @dias_segundo_vencimiento INT = 20   -- Días después de emisión para 2do vencimiento
+    @dias_primer_vencimiento INT ,  -- Días después de emisión para 1er vencimiento
+    @dias_segundo_vencimiento INT   -- Días después de emisión para 2do vencimiento
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -377,17 +292,223 @@ BEGIN
     END CATCH
 END;
 GO
+--------------------------------------------------------
+-- Generar detalle de expensas por uf
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_detalle_expensas_por_uf
+    @cantidad INT 
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+
+    DECLARE 
+        @i INT = 1,
+        @id_detalle INT,
+        @id_expensa INT,
+        @id_unidad_funcional INT,
+        @id_consorcio INT,
+        @gastos_ordinarios DECIMAL(12,2),
+        @gastos_extraordinarios DECIMAL(12,2),
+        @valor_cuota DECIMAL(12,2),
+        @fecha_1er_vto DATE,
+        @fecha_2do_vto DATE,
+        @fecha_pago DATE,
+        @interes_mora DECIMAL(5,2),
+        @deuda DECIMAL(12,2),
+        @monto_total DECIMAL(12,2);
+
+ -- 1. Cargar datos base
+
+    DECLARE @Expensas TABLE (id_expensa INT, fecha_1er_vto DATE, fecha_2do_vto DATE);
+    DECLARE @UF TABLE (id_unidad_funcional INT, id_consorcio INT);
+    DECLARE @GastoOrd TABLE (monto DECIMAL(12,2));
+    DECLARE @GastoExt TABLE (monto DECIMAL(12,2));
+
+    INSERT INTO @Expensas
+    SELECT id_expensa, primer_vencimiento, segundo_vencimiento FROM ddbba.expensa;
+
+    INSERT INTO @UF
+    SELECT id_unidad_funcional, id_consorcio FROM ddbba.unidad_funcional;
+
+    INSERT INTO @GastoOrd
+    SELECT importe FROM ddbba.gastos_ordinarios;
+
+    INSERT INTO @GastoExt
+    SELECT importe_total FROM ddbba.gasto_extraordinario;
+
+    IF NOT EXISTS (SELECT 1 FROM @Expensas) OR NOT EXISTS (SELECT 1 FROM @UF)
+    BEGIN
+        PRINT N' No hay datos suficientes en expensa o unidad_funcional.';
+        RETURN;
+    END;
+
+ -- 2. Generar registros random
+
+    WHILE @i <= @cantidad
+    BEGIN
+        -- Seleccionar expensa y UF válidos
+        SELECT TOP 1 
+            @id_expensa = id_expensa,
+            @fecha_1er_vto = fecha_1er_vto,
+            @fecha_2do_vto = fecha_2do_vto
+        FROM @Expensas ORDER BY NEWID();
+
+        SELECT TOP 1 
+            @id_unidad_funcional = id_unidad_funcional,
+            @id_consorcio = id_consorcio
+        FROM @UF ORDER BY NEWID();
+
+        -- Buscar fecha de pago (si existe)
+        SELECT TOP 1 @fecha_pago = fecha_pago
+        FROM ddbba.pago
+        WHERE id_expensa = @id_expensa
+          AND id_unidad_funcional = @id_unidad_funcional
+          AND id_consorcio = @id_consorcio;
+
+        IF @fecha_pago IS NULL
+            SET @fecha_pago = CAST(GETDATE() AS DATE); -- sin pago: hoy
+
+        -- Gastos ordinarios y extraordinarios
+        SELECT TOP 1 @gastos_ordinarios = monto FROM @GastoOrd ORDER BY NEWID();
+        SELECT TOP 1 @gastos_extraordinarios = monto FROM @GastoExt ORDER BY NEWID();
+
+        -- Valor de la cuota
+        SET @valor_cuota = @gastos_ordinarios + @gastos_extraordinarios;
+
+        -- Interés por mora
+        IF @fecha_pago < @fecha_1er_vto
+            SET @interes_mora = 0.00;
+        ELSE IF @fecha_pago BETWEEN @fecha_1er_vto AND @fecha_2do_vto
+            SET @interes_mora = 0.02;
+        ELSE
+            SET @interes_mora = 0.05;
+
+        -- Calcular deuda y total
+        SET @deuda = @valor_cuota * @interes_mora;
+        SET @monto_total = @valor_cuota + @deuda;
+
+        -- Insertar en detalle
+        INSERT INTO ddbba.detalle_expensas_por_uf (
+            id_detalle,
+            id_expensa,
+            id_unidad_funcional,
+            id_consorcio,
+            gastos_ordinarios,
+            gastos_extraordinarios,
+            deuda,
+            interes_mora,
+            monto_total
+        )
+        VALUES (
+            @i,
+            @id_expensa,
+            @id_unidad_funcional,
+            @id_consorcio,
+            @gastos_ordinarios,
+            @gastos_extraordinarios,
+            @deuda,
+            @interes_mora * 100,  -- porcentaje
+            @monto_total
+        );
+
+        SET @i += 1;
+    END;
+
+    PRINT N' Generación de detalle_expensas_por_uf finalizada correctamente.';
+END;
+GO
+------------------------------------------------------------------------------------------
+--Generar Estados financieros
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_estado_financiero
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Limpiar la tabla de estados anteriores
+    DELETE FROM ddbba.estado_financiero;
+
+    -- 2. Insertar los nuevos estados financieros de forma masiva
+    INSERT INTO ddbba.estado_financiero (
+        id_expensa,
+        saldo_anterior,
+        ingresos_en_termino,
+        ingresos_adelantados,
+        ingresos_adeudados,
+        egresos_del_mes,
+        saldo_cierre
+    )
+    SELECT
+        e.id_expensa,
+
+        -- Saldo anterior = 10% de los egresos del mes
+        x.egresos_del_mes * 0.1 AS saldo_anterior,
+
+        -- Ingresos en término
+        ISNULL(SUM(CASE 
+            WHEN p.fecha_pago BETWEEN e.primer_vencimiento AND e.segundo_vencimiento THEN p.monto 
+            ELSE 0 END), 0) AS ingresos_en_termino,
+
+        -- Ingresos adelantados
+        ISNULL(SUM(CASE 
+            WHEN p.fecha_pago < e.primer_vencimiento THEN p.monto 
+            ELSE 0 END), 0) AS ingresos_adelantados,
+
+        -- Ingresos adeudados = total expensas - total pagos
+        CASE 
+            WHEN ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0) < 0 THEN 0
+            ELSE ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0)
+        END AS ingresos_adeudados,
+
+        -- Egresos del mes
+        x.egresos_del_mes,
+
+        -- Saldo cierre = saldo anterior + ingresos - egresos
+        (x.egresos_del_mes * 0.1)
+            + ISNULL(SUM(CASE WHEN p.fecha_pago BETWEEN e.primer_vencimiento AND e.segundo_vencimiento THEN p.monto ELSE 0 END), 0)
+            + ISNULL(SUM(CASE WHEN p.fecha_pago < e.primer_vencimiento THEN p.monto ELSE 0 END), 0)
+            - x.egresos_del_mes
+            - CASE 
+                WHEN ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0) < 0 THEN 0
+                ELSE ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0)
+              END AS saldo_cierre
+
+    FROM ddbba.expensa e
+    LEFT JOIN (
+        SELECT id_expensa, SUM(importe) AS monto FROM ddbba.gastos_ordinarios GROUP BY id_expensa
+    ) AS goo ON e.id_expensa = goo.id_expensa
+    LEFT JOIN (
+        SELECT id_expensa, SUM(importe_total) AS monto FROM ddbba.gasto_extraordinario GROUP BY id_expensa
+    ) AS ge ON e.id_expensa = ge.id_expensa
+    LEFT JOIN ddbba.pago AS p ON e.id_expensa = p.id_expensa
+    LEFT JOIN ddbba.detalle_expensas_por_uf AS de ON e.id_expensa = de.id_expensa
+
+    CROSS APPLY (
+        SELECT ISNULL(goo.monto,0) + ISNULL(ge.monto,0) AS egresos_del_mes
+    ) AS x
+
+    GROUP BY 
+        e.id_expensa,
+        e.primer_vencimiento,
+        e.segundo_vencimiento,
+        x.egresos_del_mes;
+
+    PRINT N'--- Generación de estado financiero finalizada correctamente ---';
+END;
+GO
+
+
 -------------------------------------------------
---este es el orden con el que se tiene que ejecutar casa SP
+
 -- Ejecución de todos los SP
 
-EXEC ddbba.sp_GenerarTiposEnvio;
+EXEC ddbba.sp_GenerarTiposEnvioRandom;
 EXEC ddbba.sp_GenerarEnviosExpensas @CantidadRegistros = 10;
 EXEC ddbba.sp_GenerarEstadosFinancieros @CantidadRegistros = 10;
 EXEC ddbba.sp_GenerarGastosExtraordinarios @CantidadRegistros = 10;
 EXEC ddbba.sp_GenerarCuotas ;
 EXEC ddbba.sp_GenerarPagos @CantidadRegistros = 10;
-EXEC ddbba.sp_generar_vencimientos_expensas 
-EXEC ddbba.sp_generar_detalle_expensas_por_uf
+EXEC ddbba.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
+EXEC ddbba.sp_generar_detalle_expensas_por_uf @cantidad=10
 EXEC ddbba.sp_generar_estado_financiero
+
 
