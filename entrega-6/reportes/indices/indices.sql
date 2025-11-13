@@ -20,10 +20,25 @@ CREATE INDEX IX_gasto_extraordinario_expensa
 ON ddbba.gasto_extraordinario (id_expensa, id_gasto_extraordinario);
 
 
+-- ==================================================
+-- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_2
+-- ==================================================
+
+-- 1️⃣ Índice principal sobre pago:
+--    mejora los filtros por fecha y joins por unidad funcional.
+CREATE INDEX IX_pago_fecha_unidad_monto
+ON ddbba.pago (fecha_pago, id_unidad_funcional)
+INCLUDE (monto);
+
+-- 2️⃣ Índice sobre unidad_funcional:
+--    mejora el join y la búsqueda de departamentos únicos.
+CREATE INDEX IX_unidad_funcional_departamento
+ON ddbba.unidad_funcional (id_unidad_funcional, departamento);
 
 
-
---Indices para el reporte 3
+-- ==================================================
+-- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_3
+-- ==================================================
 
 -- Índice para mejorar filtros y joins en expensa
 CREATE INDEX IX_expensa_consorcio_fecha 
@@ -37,7 +52,9 @@ CREATE INDEX IX_gasto_extraordinario_expensa
 ON ddbba.gasto_extraordinario (id_expensa, importe_total);
 
 
--- Indices para el reporte 6 
+-- ==================================================
+-- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_6
+-- ==================================================
 
 -- Índice para optimizar el filtrado y orden de los pagos por UF, ID expensa y fecha
 CREATE INDEX IX_pago_consorcio_uf_fecha
