@@ -51,6 +51,39 @@ ON ddbba.gastos_ordinarios (id_expensa, importe);
 CREATE INDEX IX_gasto_extraordinario_expensa 
 ON ddbba.gasto_extraordinario (id_expensa, importe_total);
 
+-- =====================================================
+-- ÍNDICES RECOMENDADOS PARA ddbba.sp_reporte_4
+-- =====================================================
+
+-- 1️⃣ Índice sobre EXPENSA:
+-- Mejora las uniones por id_expensa y los filtros por fecha_emision e id_consorcio.
+CREATE INDEX IX_expensa_consorcio_fecha
+ON ddbba.expensa (id_consorcio, fecha_emision, id_expensa);
+
+-- 2️⃣ Índice sobre GASTOS_ORDINARIOS:
+-- Optimiza el JOIN con expensa e inclusión del campo importe (usado en SUM).
+CREATE INDEX IX_gastos_ordinarios_expensa
+ON ddbba.gastos_ordinarios (id_expensa)
+INCLUDE (importe);
+
+-- 3️⃣ Índice sobre GASTO_EXTRAORDINARIO:
+-- Igual que el anterior, para el JOIN y la agregación de importe_total.
+CREATE INDEX IX_gasto_extraordinario_expensa
+ON ddbba.gasto_extraordinario (id_expensa)
+INCLUDE (importe_total);
+
+-- 4️⃣ Índice sobre PAGO:
+-- Mejora el filtro por consorcio, fecha y estado (Aprobado),
+-- además de las funciones YEAR() y MONTH() usadas en los agrupamientos.
+CREATE INDEX IX_pago_consorcio_fecha_estado
+ON ddbba.pago (id_consorcio, fecha_pago, estado)
+INCLUDE (monto, id_unidad_funcional);
+
+
+
+
+
+
 
 -- ==================================================
 -- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_6
