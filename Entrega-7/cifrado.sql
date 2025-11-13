@@ -16,8 +16,6 @@ Arriola Santiago — 41743980
 
 
 
-
-
 --divido el SP en dos ya que sino vamos a tener q hacer todo el sp dinamico
 CREATE OR ALTER PROCEDURE ddbba.sp_alter_table
 AS
