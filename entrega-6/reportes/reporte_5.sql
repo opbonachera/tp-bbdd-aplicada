@@ -1,7 +1,7 @@
 
 -- 3 (tres) propietarios con mayor morosidad (morosidad = deuda total que tiene un propietario (persona) por las unidades funcionales que posee).
 
-CREATE OR ALTER PROCEDURE ddbba.sp_top_propietarios_morosos
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
     @id_consorcio INT = NULL,
     @fecha_desde DATE = NULL,
     @fecha_hasta DATE = NULL,
@@ -45,4 +45,4 @@ END;
 GO
 
 -- Top 3 propietarios más morosos de todo el sistema
-EXEC ddbba.sp_top_propietarios_morosos;
+EXEC ddbba.sp_reporte_5;

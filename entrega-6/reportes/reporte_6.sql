@@ -32,7 +32,7 @@ BEGIN
     ORDER BY
         p.id_unidad_funcional,
         p.fecha_pago;
-END;
+END
 GO
  
 
