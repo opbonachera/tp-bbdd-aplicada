@@ -27,9 +27,9 @@ GO
 -- Tabla consorcio
 CREATE TABLE ddbba.consorcio (
     id_consorcio INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(255),
+    nombre VARCHAR(80),
     metros_cuadrados INT,
-    direccion VARCHAR(255),
+    direccion VARCHAR(40),
     cant_UF SMALLINT
 );
 GO
@@ -38,20 +38,20 @@ GO
 CREATE TABLE ddbba.proveedores (
     id_proveedores INT PRIMARY KEY IDENTITY(1,1),
     tipo_de_gasto VARCHAR(50),
-    descripcion VARCHAR(100),
-    detalle VARCHAR(100) NULL,
-    nombre_consorcio VARCHAR(255)
+    entidad VARCHAR(100),
+    detalle VARCHAR(120) NULL,
+    nombre_consorcio VARCHAR(80)
 );
 GO
 
 -- Tabla persona
 CREATE TABLE ddbba.persona (
     nro_documento BIGINT,
-    tipo_documento VARCHAR(10),
-    nombre VARCHAR(255),
-    mail VARCHAR(255) UNIQUE,
+    tipo_documento VARCHAR(15),
+    nombre VARCHAR(80),
+    mail VARCHAR(100) UNIQUE,
     telefono VARCHAR(25),
-    cbu VARCHAR(30),
+    cbu CHAR(22),
     PRIMARY KEY (nro_documento, tipo_documento)
 );
 GO
@@ -59,7 +59,7 @@ GO
 -- Tabla tipo_gasto
 CREATE TABLE ddbba.tipo_gasto (
     id_tipo_gasto INT PRIMARY KEY IDENTITY(1,1),
-    detalle VARCHAR(255)
+    detalle VARCHAR(100)
 );
 GO
 
@@ -75,8 +75,8 @@ CREATE TABLE ddbba.unidad_funcional (
     id_unidad_funcional INT NOT NULL,
     id_consorcio INT NOT NULL,
     metros_cuadrados INT,
-    piso VARCHAR(2),
-    departamento VARCHAR(10),
+    piso CHAR(2),
+    departamento CHAR(2),
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,
     coeficiente FLOAT,
@@ -94,8 +94,8 @@ CREATE TABLE ddbba.rol (
     id_unidad_funcional INT NOT NULL,
     id_consorcio INT NOT NULL,
     nro_documento BIGINT,
-    tipo_documento VARCHAR(10),
-    nombre_rol VARCHAR(50),
+    tipo_documento VARCHAR(15),
+    nombre_rol VARCHAR(20),
     activo BIT DEFAULT 1,
     fecha_inicio DATE,
     fecha_fin DATE,
@@ -122,7 +122,7 @@ CREATE TABLE ddbba.gastos_ordinarios (
     id_gasto_ordinario INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT,
     id_tipo_gasto INT,
-    detalle VARCHAR(255),
+    detalle VARCHAR(100),
     nro_factura VARCHAR(50),
     importe decimal(12,2),
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
@@ -134,7 +134,7 @@ GO
 CREATE TABLE ddbba.gasto_extraordinario (
     id_gasto_extraordinario INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT,
-    detalle VARCHAR(255),
+    detalle VARCHAR(100),
     total_cuotas INT DEFAULT 1,
     pago_en_cuotas BIT DEFAULT 0,
     importe_total decimal(12,2),
@@ -145,7 +145,7 @@ GO
 -- Tabla cuotas
 CREATE TABLE ddbba.cuotas (
     id_gasto_extraordinario INT,
-    nro_cuota INT,
+    nro_cuota SMALLINT,
     PRIMARY KEY (id_gasto_extraordinario, nro_cuota),
     FOREIGN KEY (id_gasto_extraordinario) REFERENCES ddbba.gasto_extraordinario(id_gasto_extraordinario) ON DELETE CASCADE
 );
@@ -159,7 +159,7 @@ CREATE TABLE ddbba.envio_expensa (
     id_consorcio INT NOT NULL,
     id_tipo_envio INT NOT NULL,
     destinatario_nro_documento BIGINT,
-    destinatario_tipo_documento VARCHAR(10),
+    destinatario_tipo_documento VARCHAR(15),
     fecha_envio DATETIME,
     FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
     FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio),
@@ -176,7 +176,7 @@ CREATE TABLE ddbba.pago (
     id_unidad_funcional INT,
     id_consorcio INT,
     id_expensa INT,
-    fecha_pago DATETIME,
+    fecha_pago DATE,
     monto decimal(12,2),
     cbu_origen VARCHAR(22),
     estado VARCHAR(50),
