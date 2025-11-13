@@ -8,32 +8,37 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    ;WITH PagosUnicos AS (
+        SELECT DISTINCT
+            p.id_unidad_funcional,
+            p.id_expensa,
+            CAST(p.fecha_pago AS DATE) AS fecha_pago
+        FROM ddbba.pago p
+        INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
+        INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
+        INNER JOIN ddbba.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
+        WHERE
+            (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
+            AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
+    ),
+    PagosConLag AS (
+        SELECT
+            *,
+            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior
+        FROM PagosUnicos
+    )
     SELECT
-        p.id_unidad_funcional,
-        p.id_expensa,
-        p.fecha_pago,
-        LAG(p.fecha_pago) OVER (PARTITION BY p.id_unidad_funcional ORDER BY p.fecha_pago) AS Fecha_Pago_Anterior,
-        DATEDIFF(
-            DAY,
-            LAG(p.fecha_pago) OVER (PARTITION BY p.id_unidad_funcional ORDER BY p.fecha_pago),
-            p.fecha_pago
-        ) AS Dias_Entre_Pagos
-    FROM ddbba.pago AS p
-    INNER JOIN ddbba.expensa AS e
-        ON p.id_expensa = e.id_expensa
-    INNER JOIN ddbba.gastos_ordinarios AS go
-        ON e.id_expensa = go.id_expensa
-    INNER JOIN ddbba.unidad_funcional AS uf
-        ON p.id_unidad_funcional = uf.id_unidad_funcional
-    WHERE
-        (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
-        AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
-        AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
-    ORDER BY
-        p.id_unidad_funcional,
-        p.fecha_pago;
+        id_unidad_funcional,
+        id_expensa,
+        fecha_pago,
+        Fecha_Pago_Anterior,
+        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos
+    FROM PagosConLag
+    ORDER BY id_unidad_funcional, fecha_pago;
 END
 GO
+
  
 
 
