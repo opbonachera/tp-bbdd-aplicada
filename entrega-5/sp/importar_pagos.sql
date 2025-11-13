@@ -58,7 +58,7 @@ BEGIN
     SELECT 
         id_pago,
         fecha,
-        ddbba.fn_limpiar_espacios(valor) AS monto,
+        ddbba.fn_normalizar_monto(valor) AS monto,
         cbu,
         'no asociado' AS estado
     FROM #temp_pagos
