@@ -1,3 +1,14 @@
+--IMPORTANTE (ANTES DE EJECUTAR EL SP):
+--Para ejecutar un llamado a una API desde SQL primero vamos a tener que habilitar ciertos permisos que por default vienen bloqueados
+--'Ole Automation Procedures' permite a SQL Server utilizar el controlador OLE para interactuar con los objetos
+
+EXEC sp_configure 'show advanced options', 1;	--Para poder editar los permisos avanzados
+RECONFIGURE;
+GO
+EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avanzada de OLE
+RECONFIGURE;
+GO
+
 /*
 Reporte 3
 Presente un cuadro cruzado con la recaudacion total desagregada segun su procedencia (ordinario, extraordinario, etc.) segun el periodo
@@ -129,11 +140,17 @@ GO
 --FORMAS DE EJECUCION DEL SP:
 
 --1. Sin parametros
+    
 exec ddbba.sp_reporte_3;
+
 --2. Con parametros de fecha
+
 exec ddbba.sp_reporte_3 
     @FechaDesde = '2025-01-01',
     @FechaHasta = '2025-04-30';
+
 --3. Con ID de consorcio
+
 exec ddbba.sp_reporte_3 
     @IdConsorcio = 2
+
