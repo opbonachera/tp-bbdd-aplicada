@@ -65,4 +65,4 @@ EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.12.0', 'AllowInProcess', 1;
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.12.0', 'DynamicParameters', 1;
 
 --para saber si sql encuentra el archivo
-EXEC xp_fileexist '‪C:\Importar_TP\Inquilino-propietarios-datos.csv';
+EXEC xp_fileexist 'C:\Importar_TP\Inquilino-propietarios-datos.csv';

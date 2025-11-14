@@ -24,6 +24,7 @@ begin
     FROM RecaudacionSemanal
     ORDER BY semana;
 end
+GO;
 
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
 AS

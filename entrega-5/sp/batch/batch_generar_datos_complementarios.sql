@@ -21,7 +21,7 @@ BEGIN
           AND c.nro_cuota = n.nro
     );
 END
-
+GO
 ----------------------------------------------------------------------------------------------------
 -- Generar Envíos de Expensas Random
 CREATE OR ALTER PROCEDURE ddbba.sp_GenerarEnviosExpensas

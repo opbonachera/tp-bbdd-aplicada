@@ -453,7 +453,7 @@ BEGIN
 	--ELIMINO LA TABLA TEMPORAL
 	DROP TABLE #temp_UF
 END
-GO*
+GO
 ----------------------------------------------------------------------------------------------------------------
 
 ---PARA EXPORTAR INQUILINOS-PROPIETARIOS
@@ -540,7 +540,7 @@ BEGIN
     PRINT 'Personas insertadas (sin duplicados).';
     PRINT '--- Importación finalizada correctamente ---';
 END;
-
+GO;
 ----------------------------------------------------------------------------------------------------------------------------------
 --PARA EXPORTAR PAGOS
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
@@ -549,15 +549,20 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    PRINT 'Importando archivo de pagos'
+    PRINT 'Importando archivo de pagos';
+
     -- ==========================================================
     -- 1. Se crea la tabla temporal
     -- ==========================================================
+    -- Nota: Siempre es bueno verificar que la tabla temporal no exista
+    -- por si el procedimiento se ejecuta de forma incompleta o hay una ejecución previa fallida.
+    DROP TABLE IF EXISTS #temp_pagos; 
+
     CREATE TABLE #temp_pagos(
         id_pago INT UNIQUE, 
         fecha DATE,
         cbu VARCHAR(22), 
-        valor VARCHAR(50)
+        valor VARCHAR(50) -- Podrías considerar usar DECIMAL o MONEY si el valor es numérico
     );
 
     SET DATEFORMAT dmy;
@@ -578,13 +583,32 @@ BEGIN
     -- 3. Ejecutar la importación a la tabla temporal
     BEGIN TRY
         EXEC sp_executesql @sql;
+        
+        -- Aquí puedes agregar el paso de insertar de #temp_pagos a tu tabla definitiva
+        -- (ej: INSERT INTO ddbba.Pagos_Definitiva SELECT * FROM #temp_pagos)
+        
+        PRINT 'Importación finalizada con éxito.';
+
     END TRY
     BEGIN CATCH
+        -- Aquí se corrige la tabla a eliminar en caso de error
         PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
         PRINT ERROR_MESSAGE();
-        DROP TABLE IF EXISTS #temp_consorcios;
+        
+        -- Se elimina la tabla temporal que sí existe
+        DROP TABLE IF EXISTS #temp_pagos; 
+        
+        -- Levantar el error para que la aplicación lo detecte (opcional pero recomendado)
+        THROW; 
+        
         RETURN;
     END CATCH
+    
+    -- La tabla temporal #temp_pagos se elimina automáticamente al finalizar la SP
+    -- Si la necesitas para el siguiente paso, se puede dejar sin eliminar.
+
+END -- Cierre correcto del procedimiento almacenado.
+
 
     -- ==========================================================
     -- 3. Se eliminan los registros vac�os
@@ -613,7 +637,7 @@ BEGIN
     PRINT 'Finaliza la importaci�n del archivo de pagos'
 
     DROP TABLE #temp_pagos;
-END;
+--END;
 GO
 
 ------------------------------------------------------------------------------------------------
