@@ -1,103 +1,121 @@
-/*se consideran como datos sensibles todos los datos que den informacion sobre la persona*/
-/*solamente tome como dato sensible el cbu de la persona ,ya que ,
-nosotros tenemos DNI como PK y para cifrarla tendriamos que borrar la tabla y cambiar la PK y cambiar todas las FK */
-/*en la tabla persona cifre el cbu,mail y telefono y en la tbal pago y uf solo el cbu*/
+-- =========================================================== --
+-- Crea logins, usuarios, roles, permisos y vistas de auditoría --
+-- =========================================================== --
 
-USE consorcios
-go
+CREATE LOGIN usuario1 WITH PASSWORD = 'Password123!';
+CREATE LOGIN usuario2 WITH PASSWORD = 'Password123!';
+CREATE LOGIN usuario3 WITH PASSWORD = 'Password123!';
+CREATE LOGIN usuario4 WITH PASSWORD = 'Password123!';
+GO
 
---divido el SP en dos ya que sino vamos a tener q hacer todo el sp dinamico
-CREATE OR ALTER PROCEDURE ddbba.sp_alter_table
-AS
-BEGIN
---primero agrego una columna extra a la tabla que cifre todos los datos que ya estan en la tabla
-	EXEC ('ALTER TABLE ddbba.persona ADD cbu_cifrado VARBINARY(MAX),
-		 telefono_cifrado VARBINARY(MAX),mail_cifrado VARBINARY(MAX)');
-	EXEC('ALTER TABLE ddbba.pago ADD cbu_cifrado VARBINARY(MAX)');
-    EXEC('ALTER TABLE ddbba.unidad_funcional ADD cbu_cifrado VARBINARY(MAX)');
-END;
---para ejecutar el sp
-EXEC ddbba.sp_alter_table
+---------------------------------------------------------------
+-- CREACIÓN DE USUARIOS EN LA BASE DE DATOS
+---------------------------------------------------------------
+USE [consorcios];
+GO
 
+CREATE USER usuario1 FOR LOGIN usuario1;
+CREATE USER usuario2 FOR LOGIN usuario2;
+CREATE USER usuario3 FOR LOGIN usuario3;
+CREATE USER usuario4 FOR LOGIN usuario4;
+GO
 
---esto es para cifrar los datos de las tres tablas
-CREATE OR ALTER PROCEDURE ddbba.sp_cifrado_tablas
-AS
-BEGIN
---aca cifro los datos que ya estan insertados en la tabla
-	--tabla personas
-	UPDATE ddbba.persona
-	SET cbu_cifrado = ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(20), cbu)),
-		telefono_cifrado= ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(20), telefono)),
-		mail_cifrado= ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(20), mail));
-
-	--tabla pago
-    UPDATE ddbba.pago
-    SET cbu_cifrado = ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(50), cbu_origen));
-
-	--tabla uf
-    UPDATE ddbba.unidad_funcional
-    SET cbu_cifrado = ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(50), cbu));
-
---esto es para eliminar una restringcion que tiene la columna mail
-	EXEC('ALTER TABLE ddbba.pesona DROP CONSTRAINT UQ__persona__7A212904BF15E7C8');
-
---aca elimino todas la columnas que son las que no estan cifradas
-	EXEC('ALTER TABLE ddbba.persona DROP COLUMN cbu,telefono,mail');
-    EXEC('ALTER TABLE ddbba.pago DROP COLUMN cbu_origen');
-    EXEC('ALTER TABLE ddbba.unidad_funcional DROP COLUMN cbu');
-
---le cambio el nombre a las columnas
-	EXEC sp_rename 'ddbba.persona.cbu_cifrado', 'cbu', 'COLUMN';
-	EXEC sp_rename 'ddbba.persona.telefono_cifrado', 'telefono', 'COLUMN';
-	EXEC sp_rename 'ddbba.persona.mail_cifrado', 'mail', 'COLUMN';
-    EXEC sp_rename 'ddbba.pago.cbu_cifrado', 'cbu_origen', 'COLUMN';
-    EXEC sp_rename 'ddbba.unidad_funcional.cbu_cifrado', 'cbu', 'COLUMN';
-END;
-
---para ejecutar el SP
-exec ddbba.sp_cifrado_tablas
-
---para ver las tablas cifradas
-SELECT *
-FROM ddbba.persona
-SELECT *
-FROM ddbba.unidad_funcional
-SELECT *
-FROM ddbba.pago
-
---para ver las tablas bien
-SELECT 
-	nro_documento,
-	tipo_documento
-    nombre,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', mail)) AS mail,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', telefono)) AS telefono,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu)) AS cbu
-FROM ddbba.persona;
-
-SELECT 
-	id_pago,
-	id_consorcio,
-	id_expensa,
-	id_unidad_funcional,
-	fecha_pago,
-    monto,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu_origen)),
-	estado
-FROM ddbba.pago;
+GRANT CONNECT TO usuario1, usuario2, usuario3, usuario4;
+GO
 
 
-SELECT 
-	id_unidad_funcional,
-	id_consorcio,
-	metros_cuadrados,
-	piso,
-	departamento,
-	cochera,
-	baulera,
-	coeficiente,
-	saldo_anterior,
-    CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu)),
-	prorrateo
-FROM ddbba.unidad_funcional;
+---------------------------------------------------------------
+-- CREACIÓN DE ROLES
+---------------------------------------------------------------
+CREATE ROLE rol_administrativo_general;
+GO
+CREATE ROLE rol_administrativo_bancario;
+GO
+CREATE ROLE rol_administrativo_operativo;
+GO
+CREATE ROLE rol_sistemas;
+GO
+
+
+---------------------------------------------------------------
+-- ASIGNACIÓN DE USUARIOS A ROLES
+---------------------------------------------------------------
+ALTER ROLE rol_administrativo_general ADD MEMBER usuario1;
+ALTER ROLE rol_administrativo_operativo ADD MEMBER usuario2;
+ALTER ROLE rol_administrativo_bancario ADD MEMBER usuario3;
+ALTER ROLE rol_sistemas ADD MEMBER usuario4;
+
+-- Un usuario en más de un rol
+ALTER ROLE rol_administrativo_general ADD MEMBER usuario3;
+GO
+
+
+---------------------------------------------------------------
+-- ASIGNACIÓN DE PERMISOS A ROLES
+---------------------------------------------------------------
+
+-- Permisos sobre tabla unidad_funcional
+GRANT INSERT, DELETE, UPDATE, SELECT 
+ON ddbba.unidad_funcional 
+TO rol_administrativo_general, rol_administrativo_operativo;
+GO
+
+-- Procedimientos de mantenimiento
+GRANT EXECUTE ON OBJECT::ddbba.sp_relacionar_inquilinos_uf 
+TO rol_administrativo_general, rol_administrativo_operativo;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_importar_uf_por_consorcios 
+TO rol_administrativo_general, rol_administrativo_operativo;
+GO
+
+-- Reportes disponibles para todos los roles
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_1 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_2 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_3 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_4 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_5 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+
+GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_6 
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+GO
+
+---------------------------------------------------------------
+--ASIGNACIÓN DE PERMISOS FALTANTES PARA SQL DINÁMICO
+---------------------------------------------------------------
+-- Los reportes (sp_reporte_1, sp_reporte_2) usan SQL dinámico.
+-- Esto rompe la cadena de propiedad, por lo que los roles
+-- necesitan permiso SELECT directo sobre las tablas consultadas.
+
+-- Permiso sobre ddbba.pago (usada en sp_reporte_1 y sp_reporte_2)
+GRANT SELECT ON ddbba.pago
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+GO
+
+-- Permiso sobre ddbba.expensa (usada en sp_reporte_1)
+GRANT SELECT ON ddbba.expensa
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+GO
+
+-- Permiso sobre ddbba.gastos_ordinarios (usada en sp_reporte_1)
+GRANT SELECT ON ddbba.gastos_ordinarios
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+GO
+
+-- Permiso sobre ddbba.gasto_extraordinario (usada en sp_reporte_1)
+GRANT SELECT ON ddbba.gasto_extraordinario
+TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
+GO
+
+-- Permiso sobre ddbba.unidad_funcional (usada en sp_reporte_2)
+GRANT SELECT ON ddbba.unidad_funcional
+TO rol_administrativo_bancario, rol_sistemas;
+GO

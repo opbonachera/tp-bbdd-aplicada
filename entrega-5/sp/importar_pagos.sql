@@ -15,7 +15,7 @@ BEGIN
         id_pago INT UNIQUE, 
         fecha DATE,
         cbu VARCHAR(22), 
-        valor VARCHAR(50)
+        valor VARCHAR(20)
     );
 
     SET DATEFORMAT dmy;
@@ -45,11 +45,11 @@ BEGIN
     END CATCH
 
     -- ==========================================================
-    -- 3. Se eliminan los registros vac�os
+    -- 3. Se eliminan los registros vacios
     -- ==========================================================
     DELETE FROM #temp_pagos
     WHERE fecha IS NULL OR valor IS NULL OR id_pago IS NULL;
-    PRINT 'Inserci�n de pagos en la tabla final'
+    PRINT 'Inserción de pagos en la tabla final'
     
     -- ==========================================================
     -- 4. Se insertan los datos del archivo en la tabla de pagos evitando duplicados
@@ -58,7 +58,7 @@ BEGIN
     SELECT 
         id_pago,
         fecha,
-        CAST(ddbba.fn_limpiar_espacios(REPLACE(valor, '$', '')) AS DECIMAL(10,2)) AS monto,
+        ddbba.fn_normalizar_monto(valor) AS monto,
         cbu,
         'no asociado' AS estado
     FROM #temp_pagos
@@ -68,7 +68,7 @@ BEGIN
         WHERE p.id_pago = #temp_pagos.id_pago
     );
 
-    PRINT 'Finaliza la importaci�n del archivo de pagos'
+    PRINT 'Finaliza la importación del archivo de pagos'
 
     DROP TABLE #temp_pagos;
 END;

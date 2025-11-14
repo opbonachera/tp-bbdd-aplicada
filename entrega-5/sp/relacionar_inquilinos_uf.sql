@@ -1,3 +1,6 @@
+use "consorcios";
+go
+
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_inquilinos_uf
     @ruta_archivo VARCHAR(4000)
 AS
@@ -12,11 +15,11 @@ BEGIN
         DROP TABLE #TempLimpia;
 
     CREATE TABLE #InquilinosUFTemp (
-        CVU_CBU VARCHAR(25),
-        nombre_consorcio VARCHAR(255),
+        CVU_CBU VARCHAR(23),
+        nombre_consorcio VARCHAR(80),
         id_unidad_funcional INT,
-        piso VARCHAR(10),
-        depto VARCHAR(10)
+        piso CHAR(2),
+        depto CHAR(2)
     );
 
     PRINT 'Tabla temporal #InquilinosUFTemp creada.';
@@ -39,14 +42,6 @@ BEGIN
     --  Limpieza de datos en la tabla temporal
     UPDATE #InquilinosUFTemp
     SET depto = RTRIM(REPLACE(REPLACE(depto, CHAR(13), ''), CHAR(10), ''));
-
-    UPDATE #InquilinosUFTemp
-    SET CVU_CBU = 
-        CASE 
-            WHEN CHARINDEX('E', CVU_CBU) > 0 THEN --Detecta si el valor está en notacion científica
-                FORMAT(CAST(CAST(CVU_CBU AS FLOAT) AS DECIMAL(20,0)), '0') -- Convierte el numero en entero sin decimales
-            ELSE CVU_CBU
-        END;
 
 	-- Eliminar duplicados en el archivo
     ;WITH SourceDeduplicada AS (
@@ -77,12 +72,17 @@ BEGIN
     SELECT 
         uf.id_unidad_funcional,
         c.id_consorcio,
-        'inquilino' AS nombre_rol,
+        CASE 
+            WHEN g.Inquilino = 1 THEN 'inquilino'
+            ELSE 'propietario'
+        END AS nombre_rol,
         p.nro_documento,
         p.tipo_documento,
         1 AS activo,
         GETDATE() AS fecha_inicio
     FROM #TempLimpia iuf -- Usamos la tabla limpia
+    JOIN ##InquilinosTemp_global g 
+       ON g.CVU_CBU = iuf.CVU_CBU
     JOIN ddbba.persona p 
         ON p.cbu = iuf.CVU_CBU
     JOIN ddbba.consorcio c 
@@ -97,7 +97,7 @@ BEGIN
             WHERE r.id_unidad_funcional = uf.id_unidad_funcional
               AND r.nro_documento = p.nro_documento
               AND r.tipo_documento = p.tipo_documento
-              AND r.nombre_rol = 'inquilino'
+              AND r.nombre_rol = CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END
               AND r.activo = 1
         );
 
@@ -115,6 +115,7 @@ BEGIN
 
     DROP TABLE #InquilinosUFTemp;
     DROP TABLE #TempLimpia;
+    DROP TABLE ##InquilinosTemp_global;
     
     PRINT '--- Proceso de relación Inquilino-UF finalizado ---';
 END;

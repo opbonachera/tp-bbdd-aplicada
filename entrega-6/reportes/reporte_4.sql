@@ -1,3 +1,4 @@
+<<<<<<< HEAD:entrega-6/reportes/reportes.sql
 create or alter procedure sp_reporte_1
 as
 begin
@@ -65,6 +66,9 @@ BEGIN
 END;
 GO
     
+=======
+  
+>>>>>>> 0eff548b4889cc629d0a75282308da28214e7a31:entrega-6/reportes/reporte_4.sql
 ------------------------------------------------------------------------------------------------------
 /*Reporte 4 con XML
 Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos*/
@@ -189,5 +193,3 @@ EXEC ddbba.sp_reporte_4;-- sin parametros de entrada
 EXEC ddbba.sp_reporte_4 @id_consorcio = 5; --mandadole un consorcio
 EXEC ddbba.sp_reporte_4 @AnioDesde = 2025, @AnioHasta = 2025; --mandadole años
 EXEC ddbba.sp_reporte_4 @id_consorcio = 1, @AnioDesde = 2025, @AnioHasta = 2025;--mandadole todos los parametos
-
-

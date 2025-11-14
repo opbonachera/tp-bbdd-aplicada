@@ -10,13 +10,13 @@ BEGIN
 --creacion de la tabla temporal
  CREATE TABLE #temp_consorcios
  ( consorcio varchar(12),
-   nombre varchar(50),
-   domicilio varchar (50),
+   nombre varchar(80),
+   domicilio varchar (40),
    cant_UF smallint,
    M2_totales int
   );
 --inserto los datos del archivo excel a la tabla temporal con openrowset(lee datos desde un archivo)
---Uso sql dinamico
+--Uso sql dinamico (OPENROWSET por extensión .xlsx)
    DECLARE @sql NVARCHAR(MAX);
 
     SET @sql = N'

@@ -11,18 +11,16 @@ BEGIN
     -- ==========================================================
     -- 1. Verificar si la tabla temporal existe
     -- ==========================================================
-    IF OBJECT_ID('tempdb..#InquilinosTemp') IS NOT NULL
-        DROP TABLE #InquilinosTemp;
-
-    CREATE TABLE #InquilinosTemp (
-        Nombre VARCHAR(100),
-        Apellido VARCHAR(100),
-        DNI BIGINT,
-        EmailPersonal VARCHAR(150),
-        TelefonoContacto VARCHAR(50),
-        CVU_CBU VARCHAR(100),
-        Inquilino TINYINT
-    );
+    IF OBJECT_ID('tempdb..##InquilinosTemp_global') IS NULL
+        CREATE TABLE ##InquilinosTemp_global (
+            Nombre VARCHAR(100),
+            Apellido VARCHAR(100),
+            DNI BIGINT,
+            EmailPersonal VARCHAR(150),
+            TelefonoContacto VARCHAR(50),
+            CVU_CBU VARCHAR(100),
+            Inquilino BIT
+        );
 
     PRINT 'Tabla temporal creada.';
 
@@ -31,7 +29,7 @@ BEGIN
     -- ==========================================================
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
-        BULK INSERT #InquilinosTemp
+        BULK INSERT ##InquilinosTemp_global
         FROM ''' + @ruta_archivo + N'''
         WITH (
             FIELDTERMINATOR = '';'',
@@ -46,18 +44,10 @@ BEGIN
     -- Eliminar duplicados en el archivo
     ;WITH cte AS (
         SELECT *,
-               ROW_NUMBER() OVER (PARTITION BY DNI ORDER BY DNI) AS rn
-        FROM #InquilinosTemp
+                ROW_NUMBER() OVER (PARTITION BY DNI, Inquilino ORDER BY DNI) AS rn
+        FROM ##InquilinosTemp_global
         )
     DELETE FROM cte WHERE rn > 1;
-
-    UPDATE #InquilinosTemp
-    SET CVU_CBU = 
-        CASE 
-            WHEN CHARINDEX('E', CVU_CBU) > 0 THEN --Detecta si el valor está en notacion científica
-                FORMAT(CAST(CAST(CVU_CBU AS FLOAT) AS DECIMAL(20,0)), '0') -- Convierte el numero en entero sin decimales
-            ELSE CVU_CBU
-    END;
 
     -- ==========================================================
     -- 3. Insertar en tabla persona sin duplicar
@@ -73,13 +63,12 @@ BEGIN
         REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
         TelefonoContacto AS telefono,
         CVU_CBU
-    FROM #InquilinosTemp t
+    FROM ##InquilinosTemp_global t
     WHERE DNI IS NOT NULL
       AND NOT EXISTS (
           SELECT 1 FROM ddbba.persona p WHERE p.nro_documento = t.DNI
       );
 
-    DROP TABLE #InquilinosTemp
     PRINT 'Personas insertadas (sin duplicados).';
     PRINT '--- Importación finalizada correctamente ---';
 END;
