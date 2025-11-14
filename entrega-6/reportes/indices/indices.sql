@@ -79,11 +79,26 @@ CREATE INDEX IX_pago_consorcio_fecha_estado
 ON ddbba.pago (id_consorcio, fecha_pago, estado)
 INCLUDE (monto, id_unidad_funcional);
 
-
-
-
-
-
+-- =====================================================
+-- ÍNDICES RECOMENDADOS PARA ddbba.sp_reporte_5
+-- =====================================================
+-- Mejora los JOINS con unidad funcional y expensa, también optimiza la función SUM()
+CREATE INDEX IX_detalle_expensas_por_uf_unidad_consorcio_expensa
+ON ddbba.detalle_expensas_por_uf (id_unidad_funcional, id_consorcio, id_expensa)
+INCLUDE (deuda);
+--Optimiza JOIN id_expensa y busqueda por rango de fechas
+CREATE INDEX IX_expensa_fecha_emision
+ON ddbba.expensa (fecha_emision)
+INCLUDE (id_expensa);
+--Optimiza filtros where y JOINs de persona y unidad funcional
+CREATE INDEX IX_rol_propietario
+ON ddbba.rol (nombre_rol, nro_documento, tipo_documento, id_unidad_funcional, id_consorcio);
+--Optimiza JOINs con rol y id expensa por unidad funcional
+CREATE INDEX IX_unidad_funcional_consorcio
+ON ddbba.unidad_funcional (id_unidad_funcional, id_consorcio);
+-- Optimiza JOIN con rol
+CREATE INDEX IX_persona_documento
+ON ddbba.persona (nro_documento, tipo_documento);
 
 -- ==================================================
 -- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_6
