@@ -79,7 +79,7 @@ CREATE TABLE ddbba.unidad_funcional (
     departamento CHAR(2),
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,
-    coeficiente FLOAT,
+    coeficiente DECIMAL(6,4),
     saldo_anterior decimal(12,2) DEFAULT 0.00,
     cbu VARCHAR(22),
     prorrateo FLOAT DEFAULT 0,
