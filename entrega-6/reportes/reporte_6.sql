@@ -1,5 +1,5 @@
 --  Reporte 6
-
+-- Se calculan la diferencia de días entre cada pago de expensas ordinarias por Unidad Funcional
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_6
     @id_unidad_funcional INT = NULL,
     @fecha_desde DATE = NULL,
@@ -12,7 +12,7 @@ BEGIN
         SELECT DISTINCT
             p.id_unidad_funcional,
             p.id_expensa,
-            CAST(p.fecha_pago AS DATE) AS fecha_pago
+            CAST(p.fecha_pago AS DATE) AS fecha_pago 
         FROM ddbba.pago p
         INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
         INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
@@ -25,7 +25,7 @@ BEGIN
     PagosConLag AS (
         SELECT
             *,
-            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior
+            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior -- Busca la fecha de pago anterior de la Unidad funcional
         FROM PagosUnicos
     )
     SELECT
@@ -33,15 +33,13 @@ BEGIN
         id_expensa,
         fecha_pago,
         Fecha_Pago_Anterior,
-        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos
+        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos -- Calcula la diferencia de días entre cada pago
     FROM PagosConLag
     ORDER BY id_unidad_funcional, fecha_pago;
 END
 GO
 
- 
-
-
+--- Formas de ejecución.
 
 -- 1️⃣ Todos los pagos de todas las UF
 EXEC ddbba.sp_reporte_6;
