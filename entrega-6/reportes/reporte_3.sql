@@ -111,12 +111,12 @@ BEGIN
         ISNULL([Ordinario], 0) AS Total_Ordinario,
         CAST(ROUND((ISNULL([Ordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Ordinario_USD, --Casteamos a DECIMAL y redondeamos a dos digitos
         ISNULL([Extraordinario], 0) AS Total_Extraordinario,
-        CAST(ROUND((ISNULL(Extraordinario, 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Extraordinario_USD,
+        CAST(ROUND((ISNULL(Extraordinario, 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Extraordinario_USD, --Casteamos a DECIMAL y redondeamos a dos digitos
         ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0) AS Total_Recaudado,
-        CAST(ROUND((ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Recaudado_USD
+        CAST(ROUND((ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Recaudado_USD --Casteamos a DECIMAL y redondeamos a dos digitos
     FROM gastos_union
     PIVOT (
-        SUM(Importe)
+        SUM(Importe) --Sumamos el importe para cada gasto dentro del periodo especificado por parámetros
         FOR Tipo IN ([Ordinario], [Extraordinario])
     ) AS pvt
     ORDER BY Periodo;
@@ -137,7 +137,7 @@ END;
 
 GO
 
---FORMAS DE EJECUCION DEL SP:
+--Formas de ejecución.
 
 --1. Sin parametros
     
