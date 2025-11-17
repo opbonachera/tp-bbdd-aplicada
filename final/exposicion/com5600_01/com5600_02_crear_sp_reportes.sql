@@ -1,29 +1,30 @@
+/*---------------------------------------------------------
+ Materia:     Base de datos aplicada. 
+ Grupo:       1
+ Comision:    5600
+ Fecha:       2025-01-01
+ Descripcion: Creacion de los procedimientos generan los reportes 1 a 6.
+ Integrantes: ArcÃ³n Wogelman, Nazareno â€” 44792096
+              Arriola Santiago â€” 41743980 
+              Bonachera Ornella â€” 46119546
+              Benitez Jimena â€” 46097948
+              Guardia Gabriel â€” 42364065
+              Perez, Olivia Constanza â€” 46641730
+----------------------------------------------------------*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  INICIO DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
-/*ENUNCIADO:CREACION DE SP NECESARIOS PARA LA GENERACION DE REPORTES PEDIDOS
-COMISION:02-5600 
-CURSO:3641
-NUMERO DE GRUPO : 01
-MATERIA: BASE DE DATOS APLICADA
-INTEGRANTES:
-Bonachera Ornella — 46119546 
-Benitez Jimena — 46097948 
-Arcón Wogelman, Nazareno-44792096
-Perez, Olivia Constanza — 46641730
-Guardia Gabriel — 42364065 
-Arriola Santiago — 41743980 
-*/
+USE Com5600_Grupo01;
+GO
 
-Use Com5600_Grupo01;
-go
-
-/*
-    Reporte 1
-    Flujo de caja semanal:
-    - Total recaudado por semana
-    - Promedio en el periodo
-    - Acumulado progresivo
-*/
-
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA GENERAR REPORTES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+-------------------------------------------------------------------------------------------------
+/* ---
+    Reporte 1.
+        Flujo de caja semanal:
+            - Total recaudado por semana
+            - Promedio en el periodo
+            - Acumulado progresivo
+--- */
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_1
     @id_consorcio INT = NULL, 
     @anio_desde INT = NULL,   
@@ -36,7 +37,7 @@ BEGIN
     DECLARE @sql NVARCHAR(MAX);
     DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
 
-    -- Filtros dinámicos
+    -- Se contruyen filtros dinamicos concatenando a la cadena del where segÃºn si el parÃ¡metro fue pasado al sp o no.
     IF @id_consorcio IS NOT NULL
         SET @where += N' AND e.id_consorcio = @id_consorcio ';
 
@@ -46,33 +47,24 @@ BEGIN
     IF @anio_hasta IS NOT NULL
         SET @where += N' AND YEAR(p.fecha_pago) <= @anio_hasta ';
 
-
+    --- Se utiliza SQL dinÃ¡mico para la utilizaciÃ³n del where con la lÃ³gica de concatenaciÃ³n. 
     SET @sql = N'
         WITH Pagos AS (
             SELECT
-                p.id_pago,
-                p.monto,
-                p.fecha_pago,
-                YEAR(p.fecha_pago) AS anio,
-                DATEPART(WEEK, p.fecha_pago) AS semana
+                p.id_pago, p.monto, p.fecha_pago,
+                YEAR(p.fecha_pago) AS anio, DATEPART(WEEK, p.fecha_pago) AS semana
             FROM ddbba.pago p
             LEFT JOIN ddbba.expensa e ON e.id_expensa = p.id_expensa
             ' + @where + N'
         ),
-
         TotalSemanal AS (
-            SELECT 
-                anio,
-                semana,
+            SELECT anio, semana,
                 SUM(monto) AS total_semanal
-            FROM Pagos
+            FROM Pagos 
             GROUP BY anio, semana
         )
-
         SELECT 
-            anio,
-            semana,
-            total_semanal,
+            anio, semana, total_semanal,
             AVG(total_semanal) OVER () AS promedio_general,
             SUM(total_semanal) OVER (ORDER BY anio, semana) AS acumulado_progresivo
         FROM TotalSemanal
@@ -91,7 +83,7 @@ GO
 ----------------------------------------------------------------------------------------------------------
 /*
     Reporte 2
-    Presente el total de recaudación por mes y departamento en formato de tabla cruzada. 
+        Presente el total de recaudaciÃ³n por mes y departamento en formato de tabla cruzada. 
 */
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
     @min  DECIMAL(12,2) = NULL, 
@@ -107,11 +99,9 @@ BEGIN
     DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
     DECLARE @having NVARCHAR(MAX) = N'';
 
-    -- filtro por año
-    IF @anio IS NOT NULL
+    -- Se contruyen filtros dinamicos concatenando a la cadena del where segÃºn si el parÃ¡metro fue pasado al sp o no.
+     IF @anio IS NOT NULL
         SET @where += N' AND YEAR(p.fecha_pago) = @anio ';
-
-    -- filtros HAVING
     IF @min IS NOT NULL AND @max IS NOT NULL
         SET @having = N' HAVING SUM(p.monto) BETWEEN @min AND @max ';
     ELSE IF @min IS NOT NULL
@@ -119,9 +109,7 @@ BEGIN
     ELSE IF @max IS NOT NULL
         SET @having = N' HAVING SUM(p.monto) <= @max ';
 
-    -----------------------------------------------------------
-    -- SANEAR nombres de departamento para el XML + PIVOT
-    -----------------------------------------------------------
+    -- Se limpian los datos de departamento y se obtienen las columnas del PIVOT
     SELECT 
         @cols = STRING_AGG(
                     QUOTENAME(REPLACE(LTRIM(RTRIM(departamento)), ' ', '_')),
@@ -132,9 +120,7 @@ BEGIN
         FROM ddbba.unidad_funcional
     ) AS d;
 
-    -----------------------------------------------------------
-    -- SQL dinámico
-    -----------------------------------------------------------
+    -- Se construye el SQL dinamico con los filtros generados previamente
     SET @sql = N'
         WITH mes_uf_CTE AS (
             SELECT 
@@ -159,9 +145,6 @@ BEGIN
         FOR XML PATH(''Mes''), ROOT(''Recaudacion''), ELEMENTS XSINIL;
     ';
 
-    -----------------------------------------------------------
-    -- Ejecutar con parámetros
-    -----------------------------------------------------------
     EXEC sp_executesql 
         @sql,
         N'@min DECIMAL(12,2), @max DECIMAL(12,2), @anio INT',
@@ -170,11 +153,10 @@ END;
 GO
 
 --------------------------------------------------------------------------------------
-
  /*
     Reporte 3
-    Presente un cuadro cruzado con la recaudación total desagregada según su procedencia
-    (ordinario, extraordinario, etc.) según el periodo.
+        Presente un cuadro cruzado con la recaudaciÃ³n total desagregada segÃºn su procedencia
+        (ordinario, extraordinario, etc.) segÃºn el periodo.
 */
 --IMPORTANTE (ANTES DE EJECUTAR EL SP):
 --Para ejecutar un llamado a una API desde SQL primero vamos a tener que habilitar ciertos permisos que por default vienen bloqueados
@@ -186,11 +168,6 @@ GO
 EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avanzada de OLE
 RECONFIGURE;
 GO
-
-/*
-Reporte 3
-Presente un cuadro cruzado con la recaudacion total desagregada segun su procedencia (ordinario, extraordinario, etc.) segun el periodo
-*/
 
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_3
     @FechaDesde DATE = NULL,
@@ -315,18 +292,15 @@ END;
 
 GO
 
-------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------
 /*
-    Reporte 4
-    Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
- */
-
-/*Reporte 4 con XML
-Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos*/
+    Reporte 4. 
+        Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
+*/
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_4
     @id_consorcio INT = NULL,  -- filtrar por consorcio
-    @AnioDesde INT = NULL,     -- año desde
-    @AnioHasta INT = NULL      --  año hasta
+    @AnioDesde INT = NULL,     -- aÃ±o desde
+    @AnioHasta INT = NULL      --  aÃ±o hasta
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -341,8 +315,7 @@ BEGIN
         SET @FechaHasta = DATEFROMPARTS(@AnioHasta, 12, 31);
 
 
--- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
-
+    -- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
     ;WITH GastosUnificados AS (
         SELECT 
             YEAR(e.fecha_emision) AS Anio,
@@ -402,8 +375,7 @@ BEGIN
     FOR XML PATH('Mes'), ROOT('Top5MesesGastos'), TYPE;
 
 
---  TOP 5 MESES CON MAYORES INGRESOS
-
+    --  TOP 5 MESES CON MAYORES INGRESOS
     ;WITH IngresosMensuales AS (
         SELECT 
             YEAR(p.fecha_pago) AS Anio,
@@ -442,12 +414,11 @@ GO
 
 --------------------------------------------------------------------------------------------
 /*
-    Obtenga los 3 (tres) propietarios con mayor morosidad. Presente información de contacto y
-    DNI de los propietarios para que la administración los pueda contactar o remitir el trámite al
-    estudio jurídico.
+    Reporte 5:
+        Obtenga los 3 (tres) propietarios con mayor morosidad. Presente informaciÃ³n de contacto y
+        DNI de los propietarios para que la administraciÃ³n los pueda contactar o remitir el trÃ¡mite al
+        estudio jurÃ­dico.
 */
--- 3 (tres) propietarios con mayor morosidad (morosidad = deuda total que tiene un propietario (persona) por las unidades funcionales que posee).
-
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
     @id_consorcio INT = NULL,
     @fecha_desde DATE = NULL,
@@ -493,9 +464,9 @@ GO
 
 -------------------------------------------------------------------------------------------------
 /*
-    --  Reporte 6
-    Muestre las fechas de pagos de expensas ordinarias de cada UF y la cantidad de días que
-    pasan entre un pago y el siguiente, para el conjunto examinado.
+    Reporte 6
+        Muestre las fechas de pagos de expensas ordinarias de cada UF y la cantidad de dÃ­as que
+        pasan entre un pago y el siguiente, para el conjunto examinado.
 
 */
 
@@ -537,5 +508,5 @@ BEGIN
     ORDER BY id_unidad_funcional, fecha_pago;
 END
 GO
-
- 
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE LA CREACION DE PROCEDIMIENTOS PARA GENERAR REPORTES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/

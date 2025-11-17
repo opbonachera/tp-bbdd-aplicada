@@ -1,19 +1,25 @@
-/*ENUNCIADO:CREACION DE SP NECESARIOS PARA LA GENERACION DE DATOS FALTANTES
-COMISION:02-5600 
-CURSO:3641
-NUMERO DE GRUPO : 01
-MATERIA: BASE DE DATOS APLICADA
-INTEGRANTES:
-Bonachera Ornella � 46119546 
-Benitez Jimena � 46097948 
-Arc�n Wogelman, Nazareno-44792096
-Perez, Olivia Constanza � 46641730
-Guardia Gabriel � 42364065 
-Arriola Santiago � 41743980 
-*/
---------------------------------------------------------------
--- Generar Cuotas Random
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarCuotas
+/*---------------------------------------------------------
+ Materia:     Base de datos aplicada. 
+ Grupo:       1
+ Comision:    5600
+ Fecha:       2025-01-01
+ Descripcion: Creacion de los procedimientos para generar datos adicionales que
+              no estan presentes en los archivos, por ejemplo gastos extraordinarios
+              o pagos no asociados.
+ Integrantes: Arcón Wogelman, Nazareno — 44792096
+              Arriola Santiago — 41743980 
+              Bonachera Ornella — 46119546
+              Benitez Jimena — 46097948
+              Guardia Gabriel — 42364065
+              Perez, Olivia Constanza — 46641730
+----------------------------------------------------------*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> INICIO DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+USE Com5600_Grupo01;
+GO
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA GENERAR DATOS ADICIONALES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/* --- GENERA CUOTAS CORRESPONDIENTES A GASTOS EXTRAORDINARIOS ---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_cuotas
 AS
 BEGIN
     INSERT INTO ddbba.cuotas (nro_cuota, id_gasto_extraordinario)
@@ -31,10 +37,10 @@ BEGIN
           AND c.nro_cuota = n.nro
     );
 END
+GO
 
-----------------------------------------------------------------------------------------------------
--- Generar Env�os de Expensas Random
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarEnviosExpensas
+/* --- Generar Envíos de Expensas Random ---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_envios_expensas
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -67,7 +73,7 @@ BEGIN
         FROM ddbba.persona
         ORDER BY NEWID();
         
-        -- Generar fecha random en los �ltimos 365 d�as
+        -- Generar fecha random en los últimos 365 días
         SET @FechaEnvio = DATEADD(DAY, -FLOOR(RAND() * 365), GETDATE());
         
         INSERT INTO ddbba.envio_expensa (
@@ -92,15 +98,12 @@ BEGIN
         SET @i = @i + 1;
     END
     
-    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' env�os de expensas random.';
+    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' envíos de expensas random.';
 END
 GO
 
-
-----------------------------------------------------------------------------------------
---Generar Gastos Extraordinarios Random
-
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarGastosExtraordinarios
+/*--- GENERA GASTOS EXTRAORDINARIOS RELACIONADOS A EXPENSA ---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_gastos_extraordinarios
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -116,15 +119,15 @@ BEGIN
     DECLARE @Detalles TABLE (Descripcion VARCHAR(200));
     INSERT INTO @Detalles VALUES 
         ('Pintura de fachada'),
-        ('Reparaci�n de ascensor'),
+        ('Reparación de ascensor'),
         ('Cambio de bomba de agua'),
-        ('Arreglo de port�n el�ctrico'),
-        ('Impermeabilizaci�n de terraza'),
-        ('Instalaci�n de c�maras de seguridad'),
-        ('Reparaci�n de tanque de agua'),
+        ('Arreglo de portón eléctrico'),
+        ('Impermeabilización de terraza'),
+        ('Instalación de cámaras de seguridad'),
+        ('Reparación de tanque de agua'),
         ('Cambio de medidores'),
-        ('Refacci�n de hall de entrada'),
-        ('Arreglo de instalaci�n el�ctrica');
+        ('Refacción de hall de entrada'),
+        ('Arreglo de instalación eléctrica');
     
     WHILE @i <= @CantidadRegistros
     BEGIN
@@ -145,11 +148,8 @@ BEGIN
 END
 GO
 
---------------------------------------------------------------------------------------
--- Generar Pagos Random
-GO
-
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarPagos
+/*--- GENERA PAGOS ---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_pagos
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -165,7 +165,7 @@ BEGIN
     DECLARE @CbuOrigen VARCHAR(22);
     DECLARE @Estado VARCHAR(20);
     
-    -- Obtener el �ltimo id_pago existente
+    -- Obtener el último id_pago existente
     SELECT @IdPago = ISNULL(MAX(id_pago), 0) FROM ddbba.pago;
     
     WHILE @i <= @CantidadRegistros
@@ -187,7 +187,7 @@ BEGIN
             ORDER BY NEWID()
         );
 
-        -- Si no se encontr� expensa, elegir cualquiera (�ltimo recurso)
+        -- Si no se encontró expensa, elegir cualquiera 
         IF @IdExpensa IS NULL
             SET @IdExpensa = (SELECT TOP 1 id_expensa FROM ddbba.expensa ORDER BY NEWID());
 
@@ -241,10 +241,8 @@ BEGIN
 END
 GO
 
-----------------------------------------------------------------
---Generar Tipos de Env�o Random
-
-CREATE OR ALTER PROCEDURE ddbba.sp_GenerarTiposEnvioRandom
+/*--- GENERA LOS TIPOS DE ENVIO---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_generar_tipos_envio_random
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -252,7 +250,7 @@ BEGIN
     -- Limpiar tabla si existe datos
     IF EXISTS (SELECT 1 FROM ddbba.tipo_envio)
     BEGIN
-        PRINT 'La tabla tipo_envio ya contiene datos. No se insertar�n duplicados.';
+        PRINT 'La tabla tipo_envio ya contiene datos. No se insertarán duplicados.';
         RETURN;
     END
     
@@ -260,15 +258,14 @@ BEGIN
         ('Email'),
         ('WhatsApp');
     
-    PRINT 'Se generaron los tipos de env�o predefinidos.';
+    PRINT 'Se generaron los tipos de envío predefinidos.';
 END
 GO
----------------------------------------------------------------------------
--- Generar vencimientos de expensas
 
+/* --- GENERA VENCIMIENTO DE EXPENSAS ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_vencimientos_expensas
-    @dias_primer_vencimiento INT ,  -- D�as despu�s de emisi�n para 1er vencimiento
-    @dias_segundo_vencimiento INT   -- D�as despu�s de emisi�n para 2do vencimiento
+    @dias_primer_vencimiento INT ,  -- Días después de emisión para 1er vencimiento
+    @dias_segundo_vencimiento INT   -- Días después de emisión para 2do vencimiento
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -301,7 +298,7 @@ BEGIN
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
         
-        -- Retornar informaci�n del error
+        -- Retornar información del error
         SELECT 
             ERROR_NUMBER() AS ErrorNumero,
             ERROR_MESSAGE() AS ErrorMensaje,
@@ -309,14 +306,13 @@ BEGIN
     END CATCH
 END;
 GO
---------------------------------------------------------
--- Generar detalle de expensas por uf
+
+/*--- CALCULA DETALLES DE EXPENSA POR UNIDAD FUNCIONAL ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_detalle_expensas_por_uf
     @cantidad INT 
 AS
 BEGIN
     SET NOCOUNT ON;
-
 
     DECLARE 
         @i INT = 1,
@@ -363,7 +359,7 @@ BEGIN
 
     WHILE @i <= @cantidad
     BEGIN
-        -- Seleccionar expensa y UF v�lidos
+        -- Seleccionar expensa y UF válidos
         SELECT TOP 1 
             @id_expensa = id_expensa,
             @fecha_1er_vto = fecha_1er_vto,
@@ -392,7 +388,7 @@ BEGIN
         -- Valor de la cuota
         SET @valor_cuota = @gastos_ordinarios + @gastos_extraordinarios;
 
-        -- Inter�s por mora
+        -- Interés por mora
         IF @fecha_pago < @fecha_1er_vto
             SET @interes_mora = 0.00;
         ELSE IF @fecha_pago BETWEEN @fecha_1er_vto AND @fecha_2do_vto
@@ -431,11 +427,11 @@ BEGIN
         SET @i += 1;
     END;
 
-    PRINT N' Generaci�n de detalle_expensas_por_uf finalizada correctamente.';
+    PRINT N' Generación de detalle_expensas_por_uf finalizada correctamente.';
 END;
 GO
-------------------------------------------------------------------------------------------
---Generar Estados financieros
+ 
+/*--- CALCULA LOS ESTADOS FINANCIEROS (Corresponde a UF)---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_estado_financiero
 AS
 BEGIN
@@ -460,7 +456,7 @@ BEGIN
         -- Saldo anterior = 10% de los egresos del mes
         x.egresos_del_mes * 0.1 AS saldo_anterior,
 
-        -- Ingresos en t�rmino
+        -- Ingresos en término
         ISNULL(SUM(CASE 
             WHEN p.fecha_pago BETWEEN e.primer_vencimiento AND e.segundo_vencimiento THEN p.monto 
             ELSE 0 END), 0) AS ingresos_en_termino,
@@ -470,7 +466,7 @@ BEGIN
             WHEN p.fecha_pago < e.primer_vencimiento THEN p.monto 
             ELSE 0 END), 0) AS ingresos_adelantados,
 
-        -- Ingresos adeudados = total expensas - total pagos
+        -- Ingresos adeudados = (total expensas+saldo anterior) - total pagos
         CASE 
             WHEN ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0) < 0 THEN 0
             ELSE ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0)
@@ -479,7 +475,7 @@ BEGIN
         -- Egresos del mes
         x.egresos_del_mes,
 
-        -- Saldo cierre = saldo anterior + ingresos - egresos
+        -- Saldo cierre =  ingresos - egresos
         (x.egresos_del_mes * 0.1)
             + ISNULL(SUM(CASE WHEN p.fecha_pago BETWEEN e.primer_vencimiento AND e.segundo_vencimiento THEN p.monto ELSE 0 END), 0)
             + ISNULL(SUM(CASE WHEN p.fecha_pago < e.primer_vencimiento THEN p.monto ELSE 0 END), 0)
@@ -509,22 +505,25 @@ BEGIN
         e.segundo_vencimiento,
         x.egresos_del_mes;
 
-    PRINT N'--- Generaci�n de estado financiero finalizada correctamente ---';
+    PRINT N'--- Generación de estado financiero finalizada correctamente ---';
 END;
 GO
 
+/*--- EJECUTA TODOS LOS SP CREADOS ---*/
+CREATE OR ALTER PROCEDURE ddbba.sp_crear_datos_adicionales
+as
+begin
+	
+	EXEC ddbba.sp_generar_tipos_envio_random;
+	EXEC ddbba.sp_generar_envios_expensas @CantidadRegistros = 10;
+	EXEC ddbba.sp_generar_estado_financiero;
+	EXEC ddbba.sp_generar_gastos_extraordinarios @CantidadRegistros = 10;
+	EXEC ddbba.sp_generar_cuotas ;
+	EXEC ddbba.sp_generar_pagos @CantidadRegistros = 10
+	EXEC ddbba.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
+	EXEC ddbba.sp_generar_detalle_expensas_por_uf @cantidad=10
 
--------------------------------------------------
+end;
 
--- Ejecuci�n de todos los SP
-
-EXEC ddbba.sp_GenerarTiposEnvioRandom;
-EXEC ddbba.sp_GenerarEnviosExpensas @CantidadRegistros = 10;
-EXEC ddbba.sp_generar_estado_financiero;
-EXEC ddbba.sp_GenerarGastosExtraordinarios @CantidadRegistros = 10;
-EXEC ddbba.sp_GenerarCuotas ;
-EXEC ddbba.sp_GenerarPagos @CantidadRegistros = 10;
-EXEC ddbba.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
-EXEC ddbba.sp_generar_detalle_expensas_por_uf @cantidad=10
-EXEC ddbba.sp_generar_estado_financiero
-
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FINALIZA CREACION DE PROCEDIMIENTOS PARA GENERAR DATOS ADICIONALES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/

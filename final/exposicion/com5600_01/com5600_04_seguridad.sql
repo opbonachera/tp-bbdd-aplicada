@@ -1,22 +1,24 @@
-/*ENUNCIADO:CREACION DE SP , TRIGGERS, VISTAS NECESARIAS PARA LA ENCRIPTACION DE DATOS SENSIBLES
--se consideran como datos sensibles todos los datos que den informacion sobre la persna
--en la tabla persona cifraron el cbu,mail y telefono y en la tbal pago y uf solo el cbu
-COMISION:02-5600 
-CURSO:3641
-NUMERO DE GRUPO : 01
-MATERIA: BASE DE DATOS APLICADA
-INTEGRANTES:
-Bonachera Ornella â€” 46119546 
-Benitez Jimena â€” 46097948 
-ArcÃ³n Wogelman, Nazareno-44792096
-Perez, Olivia Constanza â€” 46641730
-Guardia Gabriel â€” 42364065 
-Arriola Santiago â€” 41743980 
-*/
+/*---------------------------------------------------------
+ Materia:     Base de datos aplicada. 
+ Grupo:       1
+ Comision:    5600
+ Fecha:       2025-01-01
+ Descripcion: Creacion de los procedimientos para generar datos adicionales que
+              no estan presentes en los archivos, por ejemplo gastos extraordinarios
+              o pagos no asociados.
+ Integrantes: Arcón Wogelman, Nazareno — 44792096
+              Arriola Santiago — 41743980 
+              Bonachera Ornella — 46119546
+              Benitez Jimena — 46097948
+              Guardia Gabriel — 42364065
+              Perez, Olivia Constanza — 46641730
+----------------------------------------------------------*/
 
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> INICIO DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+USE "Com5600_Grupo01"
+GO
 
-
---divido el SP en dos ya que sino vamos a tener q hacer todo el sp dinamico
+/* --- Agrega las columnas extra para los datos cifrados---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_alter_table
 AS
 BEGIN
@@ -26,11 +28,11 @@ BEGIN
 	EXEC('ALTER TABLE ddbba.pago ADD cbu_cifrado VARBINARY(MAX)');
     EXEC('ALTER TABLE ddbba.unidad_funcional ADD cbu_cifrado VARBINARY(MAX)');
 END;
---para ejecutar el sp
-EXEC ddbba.sp_alter_table
+GO
 
-
---esto es para cifrar el cbu da la tablas
+exec ddbba.sp_alter_table
+go 
+-- Cifrar tablas
 CREATE OR ALTER PROCEDURE ddbba.sp_cifrado_tablas
 AS
 BEGIN
@@ -87,21 +89,9 @@ BEGIN
         PRINT 'Todos los datos ya se encuentran cifrados';
     END
 END;
+GO
 
-
---para ejecutar el SP
-exec ddbba.sp_cifrado_tablas
-
---para ver las tablas cifradas
-SELECT *
-FROM ddbba.persona
-SELECT *
-FROM ddbba.unidad_funcional
-SELECT *
-FROM ddbba.pago
-
---Creo las vistas para vr las tablas decifradas
-
+/* --- DESENCRIPTA DATOS DE LA TABLA DE PERSONAS--- */
 --tabla personas
 CREATE OR ALTER VIEW ddbba.vw_persona
 AS
@@ -113,10 +103,9 @@ SELECT
     CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', telefono_cifrado)) AS telefono,
     CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu_cifrado)) AS cbu
 FROM ddbba.persona;
+GO
 
---select * from ddbba.vw_persona
-
---tabla de pagos
+/* --- DESENCRIPTA DATOS DE LA TABLA DE PAGOS--- */
 CREATE OR ALTER VIEW ddbba.vw_pago
 AS
 SELECT 
@@ -129,10 +118,9 @@ SELECT
     CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu_cifrado)) AS cbu_origen,
     estado
 FROM ddbba.pago;
+GO
 
---select * from ddbba.vw_pago
-
--- tabla de unidad funcional
+/* --- DESENCRIPTA DATOS DE LA TABLA DE UNIDAD FUNCIONAL --- */
 CREATE OR ALTER VIEW ddbba.vw_uf
 AS
 SELECT 
@@ -148,11 +136,9 @@ SELECT
     CONVERT(VARCHAR(50), DECRYPTBYPASSPHRASE('Grupo_1', cbu_cifrado)) AS cbu,
     prorrateo
 FROM ddbba.unidad_funcional;
+GO
 
---select * from ddbba.vw_uf
-
--- triggers para cada vez que se inserte o se cambie alguno de los datos sencibles se vuelva a cifrar
-
+/* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE PERSONAS --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_persona
 ON ddbba.persona
 AFTER INSERT, UPDATE
@@ -179,15 +165,9 @@ BEGIN
     INNER JOIN inserted i ON p.tipo_documento = i.tipo_documento 
 							and p.nro_documento=i.nro_documento;
 END;
+GO
 
-/*INSERT INTO ddbba.persona (nombre,tipo_documento,nro_documento, mail, telefono, cbu)
-VALUES ('Jimena Benitez', 'DNI','46097948','jime@example.com', '1122334455', '0170123400000000000001');
-select * from ddbba.persona*/
-
-
-
-
--- Pago
+/* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE PAGOS --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_pago
 ON ddbba.pago
 AFTER INSERT, UPDATE
@@ -205,14 +185,8 @@ BEGIN
 	FROM ddbba.pago p
     INNER JOIN inserted i ON p.id_pago = i.id_pago;
 END;
-
-
-/*INSERT INTO ddbba.pago (id_pago,id_consorcio, id_expensa, id_unidad_funcional, fecha_pago, monto, cbu_origen, estado)
-VALUES ( 102,1,1, 1, GETDATE(), 55000, '0170123400000000000002', 'Aprobado');
- select * from ddbba.pago*/
-
-
--- Unidad Funcional
+GO
+/* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE UNIDAD FUNCIONAL --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_uf
 ON ddbba.unidad_funcional
 AFTER INSERT, UPDATE
@@ -231,7 +205,5 @@ BEGIN
 	FROM ddbba.unidad_funcional uf
     INNER JOIN inserted i ON uf.id_unidad_funcional = i.id_unidad_funcional;
 END;
-
-/*INSERT INTO ddbba.unidad_funcional (id_unidad_funcional,id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente, saldo_anterior, cbu, prorrateo)
-VALUES (40,1, 75, 3, 'B', 1, 0, 0.8, 0, '0170123400000000000003', 0.8);
-SELECT * FROM ddbba.unidad_funcional*/
+GO
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
