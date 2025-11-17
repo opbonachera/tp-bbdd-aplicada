@@ -51,18 +51,18 @@ BEGIN
 
     EXEC sp_executesql @sql;
 
-    PRINT 'Insertando en la tabla final sin duplicados';
-
-    ;WITH OrigenDeduplicado AS (
-        SELECT
-            t.nombre,
-            t.M2_totales,
-            t.domicilio,
-            t.cant_UF,
-            ROW_NUMBER() OVER (PARTITION BY t.nombre ORDER BY t.consorcio) AS rn
-        FROM
-            #temp_consorcios AS t
+    PRINT 'Eliminando duplicados en la tabla temporal.';
+    -- Se eliminan duplicados en la tabla temporal
+    ;WITH D AS (
+        SELECT 
+               ROW_NUMBER() OVER (
+                    PARTITION BY nombre ORDER BY (SELECT NULL)
+               ) AS rn
+        FROM #temp_consorcios
     )
+    DELETE FROM D WHERE rn > 1;
+    PRINT 'Duplicados eliminados.';
+
     INSERT INTO ddbba.consorcio (
         nombre,
         metros_cuadrados,
@@ -70,17 +70,15 @@ BEGIN
         cant_UF
     )
     SELECT
-        od.nombre,
-        od.M2_totales,
-        od.domicilio,
-        od.cant_UF
-    FROM OrigenDeduplicado AS od
-    WHERE
-        od.rn = 1
-        AND NOT EXISTS (
+        tc.nombre,
+        tc.M2_totales,
+        tc.domicilio,
+        tc.cant_UF
+    from #temp_consorcios tc
+    WHERE NOT EXISTS (
             SELECT 1
             FROM ddbba.consorcio AS dest
-            WHERE dest.nombre = od.nombre
+            WHERE dest.nombre = tc.nombre
         );
 
     PRINT 'Datos importados en la tabla final.';
@@ -93,58 +91,77 @@ GO
 
 /* --- IMPORTA PROVEEDORES (datos varios.xlsx -> hoja Proveedores) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_proveedores
-    @ruta_archivo VARCHAR(4000)
+	@ruta_archivo varchar(255)
 AS
 BEGIN
-    SET NOCOUNT ON;
+ 
+    -- Se crea la tabla temporal
+     CREATE TABLE #temp_proveedores
+     (  tipo_de_gasto VARCHAR(50),
+	    entidad VARCHAR (100),
+	    detalle VARCHAR(120) NULL,
+	    nombre_consorcio VARCHAR (80),
+      );
+    --inserto los datos del archivo excel a la tabla temporal con openrowset(lee datos desde un archivo)
+    --Uso sql dinamico
+       DECLARE @sql NVARCHAR(MAX);
 
-    -- Crear tabla temporal
-    CREATE TABLE #temp_proveedores
-    (
-        tipo_de_gasto     VARCHAR(50),
-        descripcion       VARCHAR(100),
-        detalle           VARCHAR(100) NULL,
-        nombre_consorcio  VARCHAR(255)
-    );
+        SET @sql = N'
+            INSERT INTO #temp_proveedores (tipo_de_gasto, entidad, detalle, nombre_consorcio)
+            SELECT 
+                  F1,  -- columna sin encabezado
+                  F2,  -- columna sin encabezado
+                  F3,  -- columna sin encabezado
+                  [Nombre del consorcio]  -- �nica con encabezado
+            FROM OPENROWSET(
+                 ''Microsoft.ACE.OLEDB.12.0'',
+                 ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo + ''',
+                 ''SELECT * FROM [Proveedores$]''
+            );';
 
-    -- Cargar datos del Excel vía SQL dinámico
-    DECLARE @sql NVARCHAR(MAX);
+    --ejecuto el sql dinamico
+        EXEC sp_executesql @sql;
 
-    SET @sql = N'
-        INSERT INTO #temp_proveedores (tipo_de_gasto, descripcion, detalle, nombre_consorcio)
-        SELECT F1, F2, F3, F4
-        FROM OPENROWSET(
-            ''Microsoft.ACE.OLEDB.12.0'',
-            ''Excel 12.0;Database=' + @ruta_archivo + ';HDR=NO'',
-            ''SELECT * FROM [Proveedores$]''
-        );
-    ';
-
-    EXEC sp_executesql @sql;
-
-    -- Insertar en tabla real evitando duplicados
+    --Inserto los datos en la tabla original (sin duplicados)
     INSERT INTO ddbba.Proveedores (
         tipo_de_gasto,
-        descripcion,
+        entidad,
         detalle,
         nombre_consorcio
     )
-    SELECT 
+    SELECT
         t.tipo_de_gasto,
-        t.descripcion,
-        t.detalle,
+        CASE 
+            WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.detalle
+            ELSE t.entidad
+        END AS entidad,
+        CASE 
+            WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.entidad
+            ELSE t.detalle
+        END AS detalle,
         t.nombre_consorcio
-    FROM #temp_proveedores t
+    FROM #temp_proveedores AS t
     WHERE NOT EXISTS (
         SELECT 1
         FROM ddbba.Proveedores p
-        WHERE p.tipo_de_gasto = t.tipo_de_gasto
-          AND p.descripcion = t.descripcion
-          AND p.detalle = t.detalle
-          AND p.nombre_consorcio = t.nombre_consorcio
+        WHERE 
+            p.tipo_de_gasto = t.tipo_de_gasto
+            AND p.entidad = 
+                CASE 
+                    WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.detalle
+                    ELSE t.entidad
+                END
+            AND ISNULL(p.detalle, '') = ISNULL(
+                CASE 
+                    WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.entidad
+                    ELSE t.detalle
+                END, ''
+            )
+            AND p.nombre_consorcio = t.nombre_consorcio
     );
-    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + ' proveedores fueron importados.';
-    DROP TABLE #temp_proveedores;
+
+	--elimino la tabla temporal
+	DROP TABLE #temp_proveedores
 END
 GO
 
@@ -156,9 +173,8 @@ BEGIN
     SET NOCOUNT ON;
     PRINT '--- Iniciando importación ---';
 
-    -- Se crea la tabla temporal para la importacion del archivo
+    -- Se verifica si la tabla temporal existe
     IF OBJECT_ID('tempdb..##InquilinosTemp_global') IS NULL
-    BEGIN
         CREATE TABLE ##InquilinosTemp_global (
             Nombre VARCHAR(100),
             Apellido VARCHAR(100),
@@ -168,7 +184,6 @@ BEGIN
             CVU_CBU VARCHAR(100),
             Inquilino BIT
         );
-    END;
 
     PRINT 'Tabla temporal creada.';
 
@@ -187,38 +202,40 @@ BEGIN
 
     PRINT 'Datos importados en tabla temporal.';
 
-    -- Se eliminan personas duplicadas que puedan existir en el archivo. 
+    -- Eliminar duplicados en el la tabla temporal segun dni
     ;WITH cte AS (
         SELECT *,
-                -- Se utiliza una función de ventana para asignar un numero de fila a cada una identificandola por su clave primaria.
-                ROW_NUMBER() OVER (PARTITION BY DNI, Inquilino ORDER BY DNI) AS rn
+               ROW_NUMBER() OVER (PARTITION BY DNI ORDER BY DNI) AS rn
         FROM ##InquilinosTemp_global
         )
-    -- Si hay una persona que aparece 2 veces, se elimina. 
     DELETE FROM cte WHERE rn > 1;
 
-    -- Se inserta en tabla persona sin duplicar
+    -- Insertar en tabla persona sin duplicar
     INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
     SELECT
-        DNI AS nro_documento,
-        CASE 
-            WHEN ABS(CHECKSUM(NEWID())) % 2 = 0 THEN 'DNI'
-            ELSE 'Pasaporte'
-        END AS tipo_documento,
-        TRIM(UPPER(CONCAT(nombre, ' ', Apellido))) AS nombre,
-        REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
-        TelefonoContacto AS telefono,
-        CVU_CBU
-    FROM ##InquilinosTemp_global t
+            DNI,
+            'DNI' as tipo_documento,
+            TRIM(UPPER(CONCAT(
+                ISNULL(nombre, ''), 
+                CASE WHEN nombre IS NOT NULL AND apellido IS NOT NULL THEN ' ' ELSE '' END,
+                ISNULL(apellido, '')
+            ))) AS nombre,
+            REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
+            TelefonoContacto AS telefono,
+            CVU_CBU AS cbu
+        FROM ##InquilinosTemp_global
     WHERE DNI IS NOT NULL
-    -- Se verifica que la persona importada no exista aun en la tabla de personas. 
-      AND NOT EXISTS (
-          SELECT 1 FROM ddbba.persona p WHERE p.nro_documento = t.DNI
-      );
+    AND NOT EXISTS ( 
+    -- Controlamos que no exista una persona con el mismo dni y tipo en la tabla (control de insercion de duplicados)
+        SELECT 1
+        FROM ddbba.persona p
+        WHERE p.nro_documento = DNI
+    );
 
-    PRINT 'Personas insertadas.';
     PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'personas fueron importadas.';
-    PRINT '--- Importación de personas finalizada correctamente ---';
+    
+    PRINT 'Personas insertadas (sin duplicados).';
+    PRINT '--- Importación finalizada correctamente ---';
 END;
 GO
 
@@ -227,14 +244,16 @@ CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
+    -- Ya que los pagos tienen varias claves foraneas, no hacemos la insercion en la tabla final aca sino que lo hacemos
+    -- en el sp relacionar_pagos donde ya disponemos de todos los datos para dichas claves
+    
     SET NOCOUNT ON;
     PRINT '---- Inicia la importacion archivo de pagos ----';
+    
+    IF OBJECT_ID('tempdb..##temp_pagos') IS NOT NULL
+        DROP TABLE ##temp_pagos;
 
-    -- Si la tabla temporal ya existe, se elimina para evitar importar datos desconocidos
-    IF OBJECT_ID('tempdb..#temp_pagos') IS NOT NULL
-        DROP TABLE #temp_pagos;
-    -- Se crea la tabla temporal
-    CREATE TABLE #temp_pagos(
+    CREATE TABLE ##temp_pagos(
         id_pago INT,
         fecha DATE,
         cbu VARCHAR(50),
@@ -242,14 +261,11 @@ BEGIN
     );
 
     SET DATEFORMAT dmy;
-
-    -- Se limpia la ruta
     DECLARE @ruta_esc NVARCHAR(4000) = REPLACE(@ruta_archivo, '''', '''''');
-    
     DECLARE @sql NVARCHAR(MAX);
-    -- Se importa el CSV en la tabla temporal
+    
     SET @sql = N'
-        BULK INSERT #temp_pagos
+        BULK INSERT ##temp_pagos
         FROM ''' + @ruta_esc + N'''
         WITH (
             FIRSTROW = 2,
@@ -258,42 +274,22 @@ BEGIN
             TABLOCK
         );';
 
-    -- Se ejecuta SQL dinámico
     BEGIN TRY
         EXEC sp_executesql @sql;
     END TRY
     BEGIN CATCH
         PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
         PRINT ERROR_MESSAGE();
-        DROP TABLE IF EXISTS #temp_pagos;
+        DROP TABLE IF EXISTS ##temp_pagos;
         RETURN;
     END CATCH;
 
-    -- Se eliminan registros con información incompleta
-    DELETE FROM #temp_pagos
+    -- Se eliminan registros con informacion incompleta
+    DELETE FROM ##temp_pagos
     WHERE fecha IS NULL OR valor IS NULL OR id_pago IS NULL;
 
-    -- Se insertan los pagos en la tabla final
-    PRINT 'Insertando en la tabla final.';
-    INSERT INTO ddbba.pago (id_pago, fecha_pago, monto, cbu_origen, estado)
-    SELECT 
-        id_pago,
-        fecha,
-        ddbba.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto,
-        cbu,
-        'no asociado'
-    FROM #temp_pagos t
-    -- Se verifica que no exista ya un pago con el mismo ID.
-    WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.pago p WHERE p.id_pago = t.id_pago
-    );
-
-    PRINT 'Datos insertados en la tabla final.';
-    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'pagos fueron importados.';
+    PRINT 'Datos de pagos cargados en tabla temporal ##temp_pagos.';
     PRINT '---- Finaliza la importacion del archivo de pagos ----';
-
-    -- Se elimina la tabla temporal
-    DROP TABLE IF EXISTS #temp_pagos;
 END;
 GO
 
@@ -481,6 +477,7 @@ BEGIN
     -- Se limpia la ruta
     DECLARE @ruta_esc NVARCHAR(4000) = REPLACE(@ruta_archivo, '''', '''''');
     DECLARE @sql NVARCHAR(MAX);
+    -- Se importa el archivo de texto con bulk insert
     SET @sql = N'
         BULK INSERT #temp_UF
         FROM ''' + @ruta_esc + N'''
@@ -524,7 +521,7 @@ BEGIN
     -- Se realiza junta con la tabla de consorcios utilizando el campo de nombre
     INNER JOIN ddbba.consorcio AS c
         ON LTRIM(RTRIM(UPPER(c.nombre))) = LTRIM(RTRIM(UPPER(t.nom_consorcio)))
-    -- Se verifica que no existe aun una unidad funcional que tenga el mismo ID y pertenezca al mismo consorcio. (Control de duplicados)
+    -- Se verifica que no existe aun una unidad funcional que tenga el mismo ID y pertenezca al mismo consorcio. (Control de insercion de duplicados)
     WHERE NOT EXISTS (
         SELECT 1 FROM ddbba.unidad_funcional uf
         WHERE uf.id_consorcio = c.id_consorcio
@@ -540,7 +537,6 @@ END
 GO
 
 /* --- RELACIONA INQUILINOS CON UNIDADES FUNCIONALES (Inquilino-propietarios-UF.csv) --- */
-/* --- RELACIONA INQUILINOS CON UNIDADES FUNCIONALES (Inquilino-propietarios-UF.csv) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_inquilinos_uf
     @ruta_archivo VARCHAR(4000)
 AS
@@ -549,12 +545,10 @@ BEGIN
 
     PRINT '--- Iniciando importación de datos de inquilino - UF ---';
 
-    
-    -- Limpieza previa
-    IF OBJECT_ID('tempdb..#InquilinosUFTemp') IS NOT NULL DROP TABLE #InquilinosUFTemp;
-
-    -- Tabla temporal para staging
-    CREATE TABLE #InquilinosUFTemp (
+    --- Se crea la tabla temporal global para staging
+    IF OBJECT_ID('tempdb..##InquilinosUFTemp') IS NOT NULL 
+        DROP TABLE ##InquilinosUFTemp;
+    CREATE TABLE ##InquilinosUFTemp (
         CVU_CBU VARCHAR(23),
         nombre_consorcio VARCHAR(80),
         id_unidad_funcional INT,
@@ -562,12 +556,12 @@ BEGIN
         depto CHAR(2)
     );
 
-    PRINT 'Tabla temporal #InquilinosUFTemp creada.';
+    PRINT 'Tabla temporal ##InquilinosUFTemp creada.';
 
-    -- BULK INSERT dinámico
+    -- Se importa el CSV con BULK INSERT
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
-        BULK INSERT #InquilinosUFTemp
+        BULK INSERT ##InquilinosUFTemp
         FROM ''' + @ruta_archivo + N'''
         WITH (
             FIELDTERMINATOR = ''|'',
@@ -579,44 +573,44 @@ BEGIN
 
     EXEC sp_executesql @sql;
 
-    -- Se limpian datos
-    UPDATE #InquilinosUFTemp
+
+    -- Se realiza limpieza de datos
+    UPDATE ##InquilinosUFTemp
     SET depto = RTRIM(REPLACE(REPLACE(depto, CHAR(13), ''), CHAR(10), ''));
 
-    /*--- Se eliminan los registros duplicados ---*/
-    ;WITH Dups AS (
+
+    -- Se eliminan datos duplicados que puedan provenir del archivo
+    ;WITH D AS (
         SELECT *,
-               rn = ROW_NUMBER() OVER (
-                    PARTITION BY CVU_CBU, nombre_consorcio, id_unidad_funcional
-                    ORDER BY (SELECT NULL)
-               )
-        FROM #InquilinosUFTemp
+               ROW_NUMBER() OVER (
+                        PARTITION BY CVU_CBU, nombre_consorcio, id_unidad_funcional
+                        ORDER BY (SELECT NULL)
+                    ) as rn
+        FROM ##InquilinosUFTemp
     )
-    DELETE FROM Dups WHERE rn > 1;
+    DELETE FROM D WHERE rn > 1;
 
 
-    /*--- Se insertan roles ---*/
+    -- Se insertan las personas en la tabla de roles
     INSERT INTO ddbba.rol
-        (id_unidad_funcional, id_consorcio, nombre_rol, nro_documento, tipo_documento, activo, fecha_inicio)
+        (id_unidad_funcional, id_consorcio, nombre_rol, nro_documento, 
+         tipo_documento, activo, fecha_inicio)
     SELECT
         uf.id_unidad_funcional,
         c.id_consorcio,
-        CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END AS nombre_rol,
+        CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END,
         p.nro_documento,
         p.tipo_documento,
-        1 AS activo,
-        GETDATE() AS fecha_inicio
-    FROM #InquilinosUFTemp iuf
-    JOIN ##InquilinosTemp_global g 
-        ON g.CVU_CBU = iuf.CVU_CBU
-    JOIN ddbba.persona p
-        ON p.cbu = iuf.CVU_CBU
-    JOIN ddbba.consorcio c
-        ON c.nombre = iuf.nombre_consorcio
-    JOIN ddbba.unidad_funcional uf
-        ON uf.id_consorcio = c.id_consorcio
-       AND uf.id_unidad_funcional = iuf.id_unidad_funcional
-    WHERE NOT EXISTS (
+        1,
+        GETDATE()
+    FROM ##InquilinosUFTemp iuf
+    JOIN ##InquilinosTemp_global g ON g.CVU_CBU = iuf.CVU_CBU -- Se asocia la persona con la uf segun el CBU
+    JOIN ddbba.persona p ON p.nro_documento = g.DNI 
+    JOIN ddbba.consorcio c ON c.nombre = iuf.nombre_consorcio -- Se busca el id de consorcio segun el nombre
+    JOIN ddbba.unidad_funcional uf 
+         ON uf.id_consorcio = c.id_consorcio
+        AND uf.id_unidad_funcional = iuf.id_unidad_funcional
+    WHERE NOT EXISTS ( -- Se verifica que no exista aun un rol que tenga la misma uf, documento, tipo, mismo rol y que este activo.
         SELECT 1
         FROM ddbba.rol r
         WHERE r.id_unidad_funcional = uf.id_unidad_funcional
@@ -626,21 +620,6 @@ BEGIN
           AND r.activo = 1
     );
 
-    /* --- Se actualiza el CBU en la unidad funcional ---*/
-    UPDATE uf
-    SET uf.cbu = iuf.CVU_CBU
-    FROM ddbba.unidad_funcional uf
-    INNER JOIN ddbba.consorcio c
-        ON uf.id_consorcio = c.id_consorcio
-    INNER JOIN #InquilinosUFTemp iuf
-        ON LTRIM(RTRIM(iuf.nombre_consorcio)) = LTRIM(RTRIM(c.nombre))
-       AND uf.id_unidad_funcional = iuf.id_unidad_funcional
-       AND ISNULL(LTRIM(RTRIM(uf.piso)),'') = ISNULL(LTRIM(RTRIM(iuf.piso)),'')
-       AND ISNULL(LTRIM(RTRIM(uf.departamento)),'') = ISNULL(LTRIM(RTRIM(iuf.depto)),'');
-
-    DROP TABLE #InquilinosUFTemp;
-    DROP TABLE ##InquilinosTemp_global;
-    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'personas fueron asociadas con UF.';
     PRINT '--- Proceso de relación Inquilino-UF finalizado ---';
 END;
 GO
@@ -650,19 +629,45 @@ CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
 AS
 BEGIN
     SET NOCOUNT ON;
-    PRINT '--- Iniciando la asociacion de pagos... ---';
+    -- Este SP se relaciona con la tabla de consorcio, uf y pagos
+    PRINT '--- Iniciando la asociacion e INSERCION de pagos... ---';
 
-    UPDATE p
-    SET 
-        p.id_unidad_funcional = uf.id_unidad_funcional,
-        p.estado = 'asociado',
-        p.id_consorcio = uf.id_consorcio
-    FROM ddbba.pago AS p
-    JOIN ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
-    WHERE p.id_unidad_funcional IS NULL;
+    -- Se eliminan los registros duplicados en la tabla de pagos
+    ;WITH C AS (
+        SELECT *,
+               ROW_NUMBER() OVER (PARTITION BY id_pago  ORDER BY (SELECT NULL)) AS rn
+        FROM ##temp_pagos
+    )
+    DELETE FROM C WHERE rn > 1;
 
-    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + ' pagos fueron asociados.';
-    PRINT '--- Finaliza la asociacion de pagos... ---';
+    -- Se insertan los pagos utilizando los datos de las tablas temporales ##temp_pagos y ##InquilinosUFTemp (STAGING) 
+    INSERT INTO ddbba.pago (id_pago, fecha_pago, monto, 
+                            cbu_origen, estado, id_unidad_funcional,   
+                            id_consorcio, id_expensa)
+    SELECT 
+        tp.id_pago,
+        tp.fecha,
+        ddbba.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto, 
+        tp.cbu, 
+        'asociado',
+        uf.id_unidad_funcional, 
+        c.id_consorcio,
+        UltimaExpensa.id_expensa 
+    FROM ##temp_pagos AS tp
+    INNER JOIN ##InquilinosUFTemp AS iuf ON tp.cbu = iuf.CVU_CBU -- Se busca la fila donde coincida CBU de inquilino en (##InquilinosUFTemp) con cbu del pago
+    INNER JOIN ddbba.consorcio AS c ON c.nombre = iuf.nombre_consorcio -- Se busca el consorcio al que pertenece la UF del pago
+    INNER JOIN ddbba.unidad_funcional AS uf ON uf.id_consorcio = c.id_consorcio AND uf.departamento = iuf.depto and uf.piso = iuf.piso
+    CROSS APPLY (
+        -- Busca la expensa más reciente PARA ESE CONSORCIO que se haya emitido ANTES O EL MISMO DÍA del pago.
+        SELECT TOP 1 e.id_expensa
+        FROM ddbba.expensa AS e
+        WHERE e.id_consorcio = c.id_consorcio AND e.fecha_emision <= tp.fecha
+        ORDER BY e.fecha_emision DESC
+    ) AS UltimaExpensa
+    -- Control de insercion de duplicados. No puede existir ya en la tabla un registro con el mismo id. 
+    WHERE NOT EXISTS (
+        SELECT 1 FROM ddbba.pago p WHERE p.id_pago = tp.id_pago
+    );
 END
 GO
 
@@ -688,6 +693,21 @@ BEGIN
 END
 GO
 
+create or alter procedure ddbba.sp_actualizar_cbu_uf
+as
+begin
+    PRINT 'Actualizando CBU en unidad_funcional...';
+
+    UPDATE uf
+    SET uf.cbu = itg.CVU_CBU
+    FROM ddbba.unidad_funcional uf
+    INNER JOIN ##InquilinosUFTemp iuf ON uf.id_consorcio = uf.id_consorcio AND uf.departamento = iuf.depto  AND uf.piso = iuf.piso
+    INNER JOIN ##InquilinosTemp_global itg on itg.CVU_CBU = iuf.CVU_CBU
+
+    PRINT CAST(@@ROWCOUNT AS VARCHAR(10))  + ' unidades funcionales actualizadas con CBU.';
+end
+go
+
 /* --- EJECUTA TODOS LOS SP PARA IMPORTAR ARCHIVOS --- */
 create or alter procedure ddbba.sp_importar_archivos
 as
@@ -699,10 +719,11 @@ begin
 	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-datos.csv'
 	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el tp\Servicios.Servicios.json', @anio=2025
     exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-UF.csv'
+    exec ddbba.sp_actualizar_cbu_uf
 	exec ddbba.sp_relacionar_pagos
 	exec ddbba.sp_actualizar_prorrateo
 end
-
+go
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE CREACION DE PROCEDIMIENTOS PARA IMPORTAR ARCHIVOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/

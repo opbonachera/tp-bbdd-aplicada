@@ -14,6 +14,7 @@
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> INICIO DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 USE Com5600_Grupo01;
 GO
+
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> EJECUCION DE PRUEBAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> IMPORTACION DE ARCHIVOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*--- PASO 1: ver las tablas y las funciones creadas ---*/
@@ -37,8 +38,21 @@ go
 
 /* --- PASO 3: Ejecutar el procedimiento que importa todos los archivos ---*/
 exec ddbba.sp_importar_archivos
+go
 
-/* --- PASO 4: Seleccionar de las tablas para verificar la correcta importación de los archivos ---*/
+
+exec ddbba.sp_importar_consorcios @ruta_archivo = 'C:\Archivos para el tp\datos varios.xlsx'
+exec ddbba.sp_importar_proveedores @ruta_archivo ='C:\Archivos para el tp\datos varios.xlsx' 
+exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el tp\pagos_consorcios.csv'
+exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Archivos para el tp\UF por consorcio.txt' 
+exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-datos.csv'
+exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el tp\Servicios.Servicios.json', @anio=2025
+exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-UF.csv'
+exec ddbba.sp_relacionar_pagos
+exec ddbba.sp_actualizar_prorrateo
+go
+
+/*--- PASO 4: Seleccionar de las tablas para verificar la correcta importación de los archivos ---*/
 select * from ddbba.unidad_funcional
 select * from ddbba.consorcio
 select * from ddbba.persona
@@ -48,6 +62,7 @@ select * from ddbba.expensa
 select * from ddbba.tipo_gasto
 select * from ddbba.gastos_ordinarios
 select * from ddbba.proveedores
+go
 
 /* --- PASO 5: Crear datos adicionales ---*/
 exec ddbba.sp_crear_datos_adicionales
@@ -59,7 +74,7 @@ select * from ddbba.estado_financiero
 select * from ddbba.gasto_extraordinario
 select * from ddbba.cuotas
 select * from ddbba.gasto_extraordinario
-select * from ddbba.pago
+select * from ddbba.pago where estado not like 'asociado'
 select * from ddbba.expensa
 select * from ddbba.detalle_expensas_por_uf
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE IMPORTACION DE ARCHIVOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
@@ -69,8 +84,8 @@ select * from ddbba.detalle_expensas_por_uf
 -- REPORTE 1: Flujo de caja semanal.
 -- Parametros: rango de fechas - id del consorcio. 
 exec ddbba.sp_reporte_1
-exec ddbba.sp_reporte_1 @id_consorcio=2
-exec ddbba.sp_reporte_1 @anio_desde=2025, @anio_hasta = 2024
+exec ddbba.sp_reporte_1 @id_consorcio=5
+exec ddbba.sp_reporte_1 @anio_desde=2024, @anio_hasta = 2026
 
 -- REPORTE 2: Tabla cruzada con recaudacion por departamento.
 exec ddbba.sp_reporte_2 @min= 74000, @max = 900000
@@ -115,7 +130,7 @@ EXEC ddbba.sp_reporte_5 @id_consorcio=2;
 --REPORTE 6: Fechas de pago de expensas ordinarias y los dias que transcurrieron entre pago y pago.
 --Parametros: id de la UF, rango de fechas. 
 EXEC ddbba.sp_reporte_6;
-S-- Solo pagos del UF 1
+-- Solo pagos del UF 1
 EXEC ddbba.sp_reporte_6 @id_unidad_funcional = 1;
 -- Pagos entre enero y marzo de 2025
 EXEC ddbba.sp_reporte_6 @fecha_desde = '2025-01-01', @fecha_hasta = '2025-03-31';
@@ -131,7 +146,8 @@ SELECT * FROM ddbba.pago
 go
 
 /*--- PASO 2: Cifrar datos ---*/
-
+exec ddbba.sp_alter_table
+go 
 exec ddbba.sp_cifrado_tablas
 go
 
@@ -149,14 +165,17 @@ go
 
 /*--- PASO 5: Verificar la función del trigger ---*/
 INSERT INTO ddbba.persona (nombre,tipo_documento,nro_documento, mail, telefono, cbu)
-VALUES ('Jimena Benitez', 'DNI','46097948','jime@example.com', '1122334455', '0170123400000000000001');
+VALUES ('Jimena Benitez', 'DNI','2228889','jime@example.com', '1122334455', '0170123400000000000001');
+go
+
+select * from ddbba.persona where nro_documento='2228889'
 go
 
 INSERT INTO ddbba.pago (id_pago,id_consorcio, id_expensa, id_unidad_funcional, fecha_pago, monto, cbu_origen, estado)
 VALUES ( 102,1,1, 1, GETDATE(), 55000, '0170123400000000000002', 'Aprobado');
 go 
 
-select * from ddbba.pago
+select * from ddbba.pago where id_pago = 102
 go 
 
 INSERT INTO ddbba.unidad_funcional (id_unidad_funcional,id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente, saldo_anterior, cbu, prorrateo)
@@ -169,3 +188,4 @@ go
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE SEGURIDAD  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE EJECUCION DE PRUEBAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+

@@ -39,8 +39,6 @@ ON ddbba.expensa (id_consorcio, fecha_emision, id_expensa);
 CREATE INDEX IX_gastos_ordinarios_expensa 
 ON ddbba.gastos_ordinarios (id_expensa, importe);
 
-CREATE INDEX IX_gasto_extraordinario_expensa 
-ON ddbba.gasto_extraordinario (id_expensa, importe_total);
 
 -- =====================================================
 -- ÍNDICES PARA ddbba.sp_reporte_4

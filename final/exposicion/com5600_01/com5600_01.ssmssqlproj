@@ -57,11 +57,17 @@
           <AssociatedConnUserName />
           <FullPath>com5600_04_seguridad.sql</FullPath>
         </FileNode>
-        <FileNode Name="com5600_05_testing.sql">
+        <FileNode Name="com5600_05_roles.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:localhost:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>localhost</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>com5600_05_testing.sql</FullPath>
+          <FullPath>com5600_05_roles.sql</FullPath>
+        </FileNode>
+        <FileNode Name="com5600_06_testing.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:localhost:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>localhost</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>com5600_06_testing.sql</FullPath>
         </FileNode>
       </Items>
     </LogicalFolder>

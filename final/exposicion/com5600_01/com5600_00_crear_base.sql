@@ -77,7 +77,7 @@ GO
 /*--- Eliminación de base de datos ---*/
 USE master;
 ALTER DATABASE Com5600_Grupo01
-SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+SET SINGLE_USER WITH ROLLBACK IMMEDIATE; -- Para forzar eliminación aunque haya conexiones
 
 DROP DATABASE Com5600_Grupo01;
 
@@ -110,9 +110,9 @@ GO
 CREATE TABLE ddbba.proveedores (
     id_proveedores INT PRIMARY KEY IDENTITY(1,1),
     tipo_de_gasto VARCHAR(50),
-    descripcion VARCHAR(100),
-    detalle VARCHAR(100) NULL,
-    nombre_consorcio VARCHAR(100)
+    entidad VARCHAR(100),
+    detalle VARCHAR(120) NULL,
+    nombre_consorcio VARCHAR(80)
 );
 GO
 
@@ -339,7 +339,7 @@ BEGIN
 --- Limpia los espacios de una cadena de caracteres
     DECLARE @resultado VARCHAR(MAX) = @valor;
 
-    SET @resultado = REPLACE(@resultado, CHAR(32), '');
+    SET @resultado = REPLACE(@resultado, CHAR(32), ''); 
     SET @resultado = REPLACE(@resultado, CHAR(160), '');
     SET @resultado = REPLACE(@resultado, CHAR(9), '');
     SET @resultado = REPLACE(@resultado, CHAR(10), '');
@@ -349,4 +349,5 @@ BEGIN
 END
 GO
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/

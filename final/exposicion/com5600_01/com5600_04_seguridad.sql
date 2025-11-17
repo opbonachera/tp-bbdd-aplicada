@@ -30,8 +30,6 @@ BEGIN
 END;
 GO
 
-exec ddbba.sp_alter_table
-go 
 -- Cifrar tablas
 CREATE OR ALTER PROCEDURE ddbba.sp_cifrado_tablas
 AS
@@ -141,7 +139,7 @@ GO
 /* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE PERSONAS --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_persona
 ON ddbba.persona
-AFTER INSERT, UPDATE
+AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -170,11 +168,11 @@ GO
 /* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE PAGOS --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_pago
 ON ddbba.pago
-AFTER INSERT, UPDATE
+AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-
+    
     UPDATE p
     SET p.cbu_cifrado = ENCRYPTBYPASSPHRASE('Grupo_1', CONVERT(VARCHAR(100), i.cbu_origen))
     FROM ddbba.pago p
@@ -189,7 +187,7 @@ GO
 /* --- ENCRIPTA LA INSERCION DE DATOS PERSONALES EN TABLA DE UNIDAD FUNCIONAL --- */
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_uf
 ON ddbba.unidad_funcional
-AFTER INSERT, UPDATE
+AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
