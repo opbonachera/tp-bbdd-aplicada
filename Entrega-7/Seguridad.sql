@@ -1,5 +1,5 @@
 -- =========================================================== --
--- Crea logins, usuarios, roles, permisos y vistas de auditoría --
+-- Crea logins, usuarios, roles, permisos y vistas de auditorï¿½a --
 -- =========================================================== --
 
 CREATE LOGIN usuario1 WITH PASSWORD = 'Password123!';
@@ -9,7 +9,7 @@ CREATE LOGIN usuario4 WITH PASSWORD = 'Password123!';
 GO
 
 ---------------------------------------------------------------
--- CREACIÓN DE USUARIOS EN LA BASE DE DATOS
+-- CREACIï¿½N DE USUARIOS EN LA BASE DE DATOS
 ---------------------------------------------------------------
 USE [consorcios];
 GO
@@ -25,7 +25,7 @@ GO
 
 
 ---------------------------------------------------------------
--- CREACIÓN DE ROLES
+-- CREACIï¿½N DE ROLES
 ---------------------------------------------------------------
 CREATE ROLE rol_administrativo_general;
 GO
@@ -38,20 +38,20 @@ GO
 
 
 ---------------------------------------------------------------
--- ASIGNACIÓN DE USUARIOS A ROLES
+-- ASIGNACIï¿½N DE USUARIOS A ROLES
 ---------------------------------------------------------------
 ALTER ROLE rol_administrativo_general ADD MEMBER usuario1;
 ALTER ROLE rol_administrativo_operativo ADD MEMBER usuario2;
 ALTER ROLE rol_administrativo_bancario ADD MEMBER usuario3;
 ALTER ROLE rol_sistemas ADD MEMBER usuario4;
 
--- Un usuario en más de un rol
+-- Un usuario en mï¿½s de un rol
 ALTER ROLE rol_administrativo_general ADD MEMBER usuario3;
 GO
 
 
 ---------------------------------------------------------------
--- ASIGNACIÓN DE PERMISOS A ROLES
+-- ASIGNACIï¿½N DE PERMISOS A ROLES
 ---------------------------------------------------------------
 
 -- Permisos sobre tabla unidad_funcional
@@ -89,9 +89,9 @@ TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_o
 GO
 
 ---------------------------------------------------------------
---ASIGNACIÓN DE PERMISOS FALTANTES PARA SQL DINÁMICO
+--ASIGNACION DE PERMISOS FALTANTES PARA SQL DINAMICO
 ---------------------------------------------------------------
--- Los reportes (sp_reporte_1, sp_reporte_2) usan SQL dinámico.
+-- Los reportes (sp_reporte_1, sp_reporte_2) usan SQL dinï¿½mico.
 -- Esto rompe la cadena de propiedad, por lo que los roles
 -- necesitan permiso SELECT directo sobre las tablas consultadas.
 
