@@ -1,20 +1,63 @@
-﻿/*
-    ENUNCIADO: Creación de base de datos, esquema y tablas. 
-    COMISION: 02-5600
-    CURSO: 3641
-    NUMERO DE GRUPO: 01
-    MATERIA: BASE DE DATOS APLICADA
-    INTEGRANTES:
-    Bonachera Ornella — 46119546 
-    Benitez Jimena — 46097948 
-    Arcón Wogelman, Nazareno-44792096
-    Perez, Olivia Constanza — 46641730
-    Guardia Gabriel — 42364065 
-    Arriola Santiago — 41743980 
-*/
+﻿/*---------------------------------------------------------
+ Materia:     Base de datos aplicada. 
+ Grupo:       1
+ Comision:    5600
+ Fecha:       2025-01-01
+ Descripcion: Creacion de base de datos, esquema y tablas.
+ Integrantes: Arcón Wogelman, Nazareno — 44792096
+              Arriola Santiago — 41743980 
+              Bonachera Ornella — 46119546
+              Benitez Jimena — 46097948
+              Guardia Gabriel — 42364065
+              Perez, Olivia Constanza — 46641730
+----------------------------------------------------------*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  INICIO DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+USE Com5600_Grupo01;
+GO
 
---CREACION DE LAS TABLAS ,ESQUEMA Y LA BASE DE DATOS
--- Eliminar tablas en orden correcto (respetando dependencias)
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  ELIMINACION DE BASE DE DATOS Y OBJETOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+
+/*--- Eliminación de índices ---*/
+DROP INDEX IF EXISTS IX_pago_fecha_unidad_monto ON ddbba.pago;
+DROP INDEX IF EXISTS IX_unidad_funcional_departamento ON ddbba.unidad_funcional;
+DROP INDEX IF EXISTS IX_expensa_consorcio_fecha ON ddbba.expensa;
+DROP INDEX IF EXISTS IX_gastos_ordinarios_expensa ON ddbba.gastos_ordinarios;
+DROP INDEX IF EXISTS IX_gasto_extraordinario_expensa ON ddbba.gasto_extraordinario;
+DROP INDEX IF EXISTS IX_pago_consorcio_fecha_estado ON ddbba.pago;
+DROP INDEX IF EXISTS IX_detalle_expensas_por_uf_unidad_consorcio_expensa ON ddbba.detalle_expensas_por_uf;
+DROP INDEX IF EXISTS IX_expensa_fecha_emision ON ddbba.expensa;
+DROP INDEX IF EXISTS IX_rol_propietario ON ddbba.rol;
+DROP INDEX IF EXISTS IX_unidad_funcional_consorcio ON ddbba.unidad_funcional;
+DROP INDEX IF EXISTS IX_persona_documento ON ddbba.persona;
+DROP INDEX IF EXISTS IX_pago_consorcio_uf_fecha ON ddbba.pago;
+GO
+
+/*--- Eliminación de funciones ---*/
+DROP FUNCTION IF EXISTS ddbba.fn_normalizar_monto;
+DROP FUNCTION IF EXISTS ddbba.fn_limpiar_espacios;
+GO
+
+/*--- Eliminación de stored procedures ---*/
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_tipos_envio;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_envios_expensas;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_estado_financiero;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_gastos_extraordinarios;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_cuotas;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_pagos;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_vencimientos_expensas;
+DROP PROCEDURE IF EXISTS ddbba.sp_generar_detalle_expensas_por_uf;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_consorcios;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_proveedores;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_pagos;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_uf_por_consorcios;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_inquilinos_propietarios;
+DROP PROCEDURE IF EXISTS ddbba.sp_importar_servicios;
+DROP PROCEDURE IF EXISTS ddbba.sp_relacionar_inquilinos_uf;
+DROP PROCEDURE IF EXISTS ddbba.sp_relacionar_pagos;
+DROP PROCEDURE IF EXISTS ddbba.sp_actualizar_prorrateo;
+GO
+
+/*--- Eliminación de tablas ---*/
 DROP TABLE IF EXISTS ddbba.detalle_expensas_por_uf;
 DROP TABLE IF EXISTS ddbba.estado_financiero;
 DROP TABLE IF EXISTS ddbba.pago;
@@ -31,22 +74,30 @@ DROP TABLE IF EXISTS ddbba.persona;
 DROP TABLE IF EXISTS ddbba.proveedores;
 DROP TABLE IF EXISTS ddbba.consorcio;
 GO
---se elmina la base de datos
-ALTER DATABASE Com5600_Grpo01 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;--ver
-use master
-DROP database IF EXISTS Com5600_Grupo01;
 
+/*--- Eliminación de base de datos ---*/
+USE master;
+ALTER DATABASE Com5600_Grupo01
+SET SINGLE_USER WITH ROLLBACK IMMEDIATE; -- Para forzar eliminación aunque haya conexiones
 
--- Crear la base de datos y el esquema
+DROP DATABASE Com5600_Grupo01;
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE ELIMINACION DE BASE DE DATOS Y OBJETOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE LA BASE DE DATOS Y TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*--- Creación de la db ---*/
 CREATE DATABASE Com5600_Grupo01;
 GO
+
 USE Com5600_Grupo01;
 GO
 
+/*--- Creación de esquema ---*/
 CREATE SCHEMA ddbba;
 GO
 
--- Tabla consorcio
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE BASE DE DATOS <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 CREATE TABLE ddbba.consorcio (
     id_consorcio INT PRIMARY KEY IDENTITY(1,1),
     nombre VARCHAR(50),
@@ -60,9 +111,9 @@ GO
 CREATE TABLE ddbba.proveedores (
     id_proveedores INT PRIMARY KEY IDENTITY(1,1),
     tipo_de_gasto VARCHAR(50),
-    descripcion VARCHAR(100),
-    detalle VARCHAR(100) NULL,
-    nombre_consorcio VARCHAR(100)
+    entidad VARCHAR(100),
+    detalle VARCHAR(120) NULL,
+    nombre_consorcio VARCHAR(80)
 );
 GO
 
@@ -237,9 +288,8 @@ CREATE TABLE ddbba.detalle_expensas_por_uf (
 );
 GO
 
--------------------------------------------------------------------------------------------------------------------------
---CREACION DE LAS FUNCIONES PARA LOS SP DE IMPORTACION DE ARCHIVOS
-----------------------------------------------------------------------------------------------------------------------
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
@@ -281,7 +331,6 @@ BEGIN
 END
 GO
 
-
 CREATE OR ALTER FUNCTION ddbba.fn_limpiar_espacios (@valor VARCHAR(MAX))
 RETURNS VARCHAR(MAX)
 AS
@@ -289,7 +338,7 @@ BEGIN
 --- Limpia los espacios de una cadena de caracteres
     DECLARE @resultado VARCHAR(MAX) = @valor;
 
-    SET @resultado = REPLACE(@resultado, CHAR(32), '');
+    SET @resultado = REPLACE(@resultado, CHAR(32), ''); 
     SET @resultado = REPLACE(@resultado, CHAR(160), '');
     SET @resultado = REPLACE(@resultado, CHAR(9), '');
     SET @resultado = REPLACE(@resultado, CHAR(10), '');
@@ -298,30 +347,10 @@ BEGIN
     RETURN @resultado;
 END
 GO
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
-----------------------------------------------------------------------------------------------------------------
---CREACION DE LOS SP PARA LA IMPORTACION DE ARCHIVOS
------------------------------------------------------------------------
-/*ENUNCIADO:CREACION DE SP NECESARIOS PARA LA IMPORTACION DE ARCHIVOS,USO DE SQL DINAMICO
-COMISION:02-5600 
-CURSO:3641
-NUMERO DE GRUPO : 01
-MATERIA: BASE DE DATOS APLICADA
-INTEGRANTES:
-Bonachera Ornella — 46119546 
-Benitez Jimena — 46097948 
-Arcón Wogelman, Nazareno-44792096
-Perez, Olivia Constanza — 46641730
-Guardia Gabriel — 42364065 
-Arriola Santiago — 41743980 
-*/
-
-
-USE Com5600_Grupo01;
-GO
-------------------------------------------------------------
--- IMPORTA CONSORCIOS (datos varios.xlsx -> hoja Consorcios)
-------------------------------------------------------------
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA IMPORTAR ARCHIVOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+-- /* --- IMPORTA CONSORCIOS (datos varios.xlsx -> hoja Consorcios) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_consorcios
     @ruta_archivo NVARCHAR(4000)
 AS
@@ -354,18 +383,18 @@ BEGIN
 
     EXEC sp_executesql @sql;
 
-    PRINT 'Insertando en la tabla final sin duplicados';
-
-    ;WITH OrigenDeduplicado AS (
-        SELECT
-            t.nombre,
-            t.M2_totales,
-            t.domicilio,
-            t.cant_UF,
-            ROW_NUMBER() OVER (PARTITION BY t.nombre ORDER BY t.consorcio) AS rn
-        FROM
-            #temp_consorcios AS t
+    PRINT 'Eliminando duplicados en la tabla temporal.';
+    -- Se eliminan duplicados en la tabla temporal
+    ;WITH D AS (
+        SELECT 
+               ROW_NUMBER() OVER (
+                    PARTITION BY nombre ORDER BY (SELECT NULL)
+               ) AS rn
+        FROM #temp_consorcios
     )
+    DELETE FROM D WHERE rn > 1;
+    PRINT 'Duplicados eliminados.';
+
     INSERT INTO ddbba.consorcio (
         nombre,
         metros_cuadrados,
@@ -373,82 +402,102 @@ BEGIN
         cant_UF
     )
     SELECT
-        od.nombre,
-        od.M2_totales,
-        od.domicilio,
-        od.cant_UF
-    FROM OrigenDeduplicado AS od
-    WHERE
-        od.rn = 1
-        AND NOT EXISTS (
+        tc.nombre,
+        tc.M2_totales,
+        tc.domicilio,
+        tc.cant_UF
+    from #temp_consorcios tc
+    WHERE NOT EXISTS (
             SELECT 1
             FROM ddbba.consorcio AS dest
-            WHERE dest.nombre = od.nombre
+            WHERE dest.nombre = tc.nombre
         );
 
     PRINT 'Datos importados en la tabla final.';
+    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'consorcios fueron importados.';
     PRINT '--- Finaliza importacion de consorcios ---';
 
     DROP TABLE IF EXISTS #temp_consorcios;
 END
 GO
 
-------------------------------------------------------------
--- IMPORTA PROVEEDORES (datos varios.xlsx -> hoja Proveedores)
-------------------------------------------------------------
+/* --- IMPORTA PROVEEDORES (datos varios.xlsx -> hoja Proveedores) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_proveedores
-	@ruta_archivo varchar(4000)
+	@ruta_archivo varchar(255)
 AS
 BEGIN
  
---creacion de la tabla temporal
- CREATE TABLE #temp_proveedores
- (  tipo_de_gasto VARCHAR(50),
-	descripcion VARCHAR (100),
-	detalle VARCHAR(100) NULL,
-	nombre_consorcio VARCHAR (255),
-  );
---inserto los datos del archivo excel a la tabla temporal con openrowset(lee datos desde un archivo)
---Uso sql dinamico
-   DECLARE @sql NVARCHAR(MAX);
+    -- Se crea la tabla temporal
+     CREATE TABLE #temp_proveedores
+     (  tipo_de_gasto VARCHAR(50),
+	    entidad VARCHAR (100),
+	    detalle VARCHAR(120) NULL,
+	    nombre_consorcio VARCHAR (80),
+      );
+    --inserto los datos del archivo excel a la tabla temporal con openrowset(lee datos desde un archivo)
+    --Uso sql dinamico
+       DECLARE @sql NVARCHAR(MAX);
 
-    SET @sql = N'
-        INSERT INTO #temp_proveedores (tipo_de_gasto,descripcion,detalle,nombre_consorcio)
-        SELECT F1 as tipo_de_gasto, F2 as descripcion,F3 as detalle, F4 as nombre_consorcio
-        FROM OPENROWSET(
-            ''Microsoft.ACE.OLEDB.12.0'',
-            ''Excel 12.0;Database=' + @ruta_archivo + ';HDR=NO'',
-            ''SELECT * FROM [Proveedores$]''
-        );
-    ';
+        SET @sql = N'
+            INSERT INTO #temp_proveedores (tipo_de_gasto, entidad, detalle, nombre_consorcio)
+            SELECT 
+                  F1,  -- columna sin encabezado
+                  F2,  -- columna sin encabezado
+                  F3,  -- columna sin encabezado
+                  [Nombre del consorcio]  -- �nica con encabezado
+            FROM OPENROWSET(
+                 ''Microsoft.ACE.OLEDB.12.0'',
+                 ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo + ''',
+                 ''SELECT * FROM [Proveedores$]''
+            );';
 
---ejecuto el sql dinamico
-    EXEC sp_executesql @sql;
+    --ejecuto el sql dinamico
+        EXEC sp_executesql @sql;
 
---Inserto los datos en la tabla original
-	INSERT INTO ddbba.Proveedores(
-	tipo_de_gasto,
-	descripcion,
-	detalle,
-	nombre_consorcio
-	)
-	select
-	t.tipo_de_gasto,
-	t.descripcion,
-	t.detalle,
-	t.nombre_consorcio
-
-	from #temp_proveedores as t
+    --Inserto los datos en la tabla original (sin duplicados)
+    INSERT INTO ddbba.Proveedores (
+        tipo_de_gasto,
+        entidad,
+        detalle,
+        nombre_consorcio
+    )
+    SELECT
+        t.tipo_de_gasto,
+        CASE 
+            WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.detalle
+            ELSE t.entidad
+        END AS entidad,
+        CASE 
+            WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.entidad
+            ELSE t.detalle
+        END AS detalle,
+        t.nombre_consorcio
+    FROM #temp_proveedores AS t
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM ddbba.Proveedores p
+        WHERE 
+            p.tipo_de_gasto = t.tipo_de_gasto
+            AND p.entidad = 
+                CASE 
+                    WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.detalle
+                    ELSE t.entidad
+                END
+            AND ISNULL(p.detalle, '') = ISNULL(
+                CASE 
+                    WHEN LOWER(t.entidad) LIKE '%serv. limpieza%' THEN t.entidad
+                    ELSE t.detalle
+                END, ''
+            )
+            AND p.nombre_consorcio = t.nombre_consorcio
+    );
 
 	--elimino la tabla temporal
 	DROP TABLE #temp_proveedores
 END
 GO
 
-
----------------------------------------------------------------------
--- IMPORTA INQUILINOS Y PROPIETARIOS (Inquilino-propietarios-datos.csv)
----------------------------------------------------------------------
+/* --- IMPORTA INQUILINOS Y PROPIETARIOS (Inquilino-propietarios-datos.csv) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_inquilinos_propietarios
     @ruta_archivo VARCHAR(4000)
 AS
@@ -456,9 +505,7 @@ BEGIN
     SET NOCOUNT ON;
     PRINT '--- Iniciando importación ---';
 
-    -- ==========================================================
-    -- 1. Verificar si la tabla temporal existe
-    -- ==========================================================
+    -- Se verifica si la tabla temporal existe
     IF OBJECT_ID('tempdb..##InquilinosTemp_global') IS NULL
         CREATE TABLE ##InquilinosTemp_global (
             Nombre VARCHAR(100),
@@ -472,9 +519,7 @@ BEGIN
 
     PRINT 'Tabla temporal creada.';
 
-    -- ==========================================================
-    -- 2. Cargar el CSV
-    -- ==========================================================
+    -- Se carga el CSV con BULK INSERT
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
         BULK INSERT ##InquilinosTemp_global
@@ -489,55 +534,58 @@ BEGIN
 
     PRINT 'Datos importados en tabla temporal.';
 
-    -- Eliminar duplicados en el archivo
+    -- Eliminar duplicados en el la tabla temporal segun dni
     ;WITH cte AS (
         SELECT *,
-                ROW_NUMBER() OVER (PARTITION BY DNI, Inquilino ORDER BY DNI) AS rn
+               ROW_NUMBER() OVER (PARTITION BY DNI ORDER BY DNI) AS rn
         FROM ##InquilinosTemp_global
         )
     DELETE FROM cte WHERE rn > 1;
 
-    -- ==========================================================
-    -- 3. Insertar en tabla persona sin duplicar
-    -- ==========================================================
+    -- Insertar en tabla persona sin duplicar
     INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
     SELECT
-        DNI AS nro_documento,
-        CASE 
-            WHEN ABS(CHECKSUM(NEWID())) % 2 = 0 THEN 'DNI'
-            ELSE 'Pasaporte'
-        END AS tipo_documento,
-        TRIM(UPPER(CONCAT(nombre, ' ', Apellido))) AS nombre,
-        REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
-        TelefonoContacto AS telefono,
-        CVU_CBU
-    FROM ##InquilinosTemp_global t
+            DNI,
+            'DNI' as tipo_documento,
+            TRIM(UPPER(CONCAT(
+                ISNULL(nombre, ''), 
+                CASE WHEN nombre IS NOT NULL AND apellido IS NOT NULL THEN ' ' ELSE '' END,
+                ISNULL(apellido, '')
+            ))) AS nombre,
+            REPLACE(TRIM(LOWER(EmailPersonal)), ' ', '') AS mail,
+            TelefonoContacto AS telefono,
+            CVU_CBU AS cbu
+        FROM ##InquilinosTemp_global
     WHERE DNI IS NOT NULL
-      AND NOT EXISTS (
-          SELECT 1 FROM ddbba.persona p WHERE p.nro_documento = t.DNI
-      );
+    AND NOT EXISTS ( 
+    -- Controlamos que no exista una persona con el mismo dni y tipo en la tabla (control de insercion de duplicados)
+        SELECT 1
+        FROM ddbba.persona p
+        WHERE p.nro_documento = DNI
+    );
 
+    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'personas fueron importadas.';
+    
     PRINT 'Personas insertadas (sin duplicados).';
-    PRINT '--- Importación finalizada correctamente ---';
+    PRINT '--- Importación finalizada correctamente ---';
 END;
 GO
 
-
-
----------------------------------------------------------------------
--- IMPORTA PAGOS (Pagos_consorcios.csv)
----------------------------------------------------------------------
+/* --- IMPORTA PAGOS (Pagos_consorcios.csv) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
+    -- Ya que los pagos tienen varias claves foraneas, no hacemos la insercion en la tabla final aca sino que lo hacemos
+    -- en el sp relacionar_pagos donde ya disponemos de todos los datos para dichas claves
+    
     SET NOCOUNT ON;
     PRINT '---- Inicia la importacion archivo de pagos ----';
+    
+    IF OBJECT_ID('tempdb..##temp_pagos') IS NOT NULL
+        DROP TABLE ##temp_pagos;
 
-    IF OBJECT_ID('tempdb..#temp_pagos') IS NOT NULL
-        DROP TABLE #temp_pagos;
-
-    CREATE TABLE #temp_pagos(
+    CREATE TABLE ##temp_pagos(
         id_pago INT,
         fecha DATE,
         cbu VARCHAR(50),
@@ -545,12 +593,11 @@ BEGIN
     );
 
     SET DATEFORMAT dmy;
-
     DECLARE @ruta_esc NVARCHAR(4000) = REPLACE(@ruta_archivo, '''', '''''');
     DECLARE @sql NVARCHAR(MAX);
-
+    
     SET @sql = N'
-        BULK INSERT #temp_pagos
+        BULK INSERT ##temp_pagos
         FROM ''' + @ruta_esc + N'''
         WITH (
             FIRSTROW = 2,
@@ -565,45 +612,28 @@ BEGIN
     BEGIN CATCH
         PRINT 'Error durante el BULK INSERT. Verifique la ruta del archivo, los permisos y el formato.';
         PRINT ERROR_MESSAGE();
-        DROP TABLE IF EXISTS #temp_pagos;
+        DROP TABLE IF EXISTS ##temp_pagos;
         RETURN;
     END CATCH;
 
-    -- eliminar registros inválidos
-    DELETE FROM #temp_pagos
+    -- Se eliminan registros con informacion incompleta
+    DELETE FROM ##temp_pagos
     WHERE fecha IS NULL OR valor IS NULL OR id_pago IS NULL;
 
-    PRINT 'Insertando en la tabla final.';
-    INSERT INTO ddbba.pago (id_pago, fecha_pago, monto, cbu_origen, estado)
-    SELECT 
-        id_pago,
-        fecha,
-        ddbba.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto,
-        cbu,
-        'no asociado'
-    FROM #temp_pagos t
-    WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.pago p WHERE p.id_pago = t.id_pago
-    );
-
-    PRINT 'Datos insertados en la tabla final.';
+    PRINT 'Datos de pagos cargados en tabla temporal ##temp_pagos.';
     PRINT '---- Finaliza la importacion del archivo de pagos ----';
-
-    DROP TABLE IF EXISTS #temp_pagos;
 END;
 GO
 
----------------------------------------------------------------------
--- IMPORTA SERVICIOS (Servicios.servicios.json)
----------------------------------------------------------------------
+/* --- IMPORTA SERVICIOS (Servicios.servicios.json) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_servicios
     @ruta_archivo NVARCHAR(4000),
     @Anio INT = 2025
 AS
 BEGIN
     SET NOCOUNT ON;
-
     DECLARE @json NVARCHAR(MAX);
+
     PRINT '--- Iniciando proceso de importacion de servicios ---';
 
     DECLARE @sql NVARCHAR(MAX);
@@ -650,7 +680,7 @@ BEGIN
         servicios_internet NVARCHAR(50) '$."SERVICIOS PUBLICOS-Internet"'
     );
 
-    -- Normalizar (asumo que existes las funciones indicadas)
+    -- Normalizar valores
     UPDATE #tempConsorcios
     SET
         mes = ddbba.fn_limpiar_espacios(mes),
@@ -742,23 +772,24 @@ BEGIN
           AND gaor.id_tipo_gasto = t.id_tipo_gasto
     );
 
+    
     PRINT '--- Proceso de importacion de servicios finalizado ---';
     DROP TABLE IF EXISTS #tempConsorcios;
 END
 GO
 
----------------------------------------------------------------------
--- IMPORTA UNIDADES FUNCIONALES (UF por consorcio.txt)
----------------------------------------------------------------------
+/* --- IMPORTA UNIDADES FUNCIONALES (UF por consorcio.txt) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_importar_uf_por_consorcios
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Si la tabla temporal ya existe, se elimina para evitar importar datos desconocidos
     IF OBJECT_ID('tempdb..#temp_UF') IS NOT NULL
         DROP TABLE #temp_UF;
 
+    -- Se crea la tabla temporal
     CREATE TABLE #temp_UF
     (
         nom_consorcio VARCHAR(255),
@@ -774,9 +805,11 @@ BEGIN
     );
 
     PRINT '--- Iniciando importacion de unidades funcionales por consorcio ---';
+
+    -- Se limpia la ruta
     DECLARE @ruta_esc NVARCHAR(4000) = REPLACE(@ruta_archivo, '''', '''''');
     DECLARE @sql NVARCHAR(MAX);
-
+    -- Se importa el archivo de texto con bulk insert
     SET @sql = N'
         BULK INSERT #temp_UF
         FROM ''' + @ruta_esc + N'''
@@ -801,21 +834,26 @@ BEGIN
     PRINT 'Datos insertados en la tabla temporal.';
     PRINT 'Insertando datos en la tabla final.';
 
+    -- Se importan las unidades funcionales en la tabla final
     INSERT INTO ddbba.unidad_funcional (
         id_unidad_funcional, id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente
     )
     SELECT
         t.num_UF,
         c.id_consorcio,
+        -- Se calculan los m2 totales sumando m2 de la UF, m2 de la baulera y m2 de la cochera
         COALESCE(t.m2_UF,0) + COALESCE(t.m2_baulera,0) + COALESCE(t.m2_cochera,0),
         t.piso,
         t.departamento,
+        -- Se indica si tiene o no cochera y baulera
         CASE WHEN UPPER(LTRIM(RTRIM(t.cochera))) IN ('SI','SÍ','1','TRUE') THEN 1 ELSE 0 END,
         CASE WHEN UPPER(LTRIM(RTRIM(t.baulera))) IN ('SI','SÍ','1','TRUE') THEN 1 ELSE 0 END,
         TRY_CAST(REPLACE(ISNULL(t.coeficiente,'0'), ',', '.') AS DECIMAL(6,3))
     FROM #temp_UF AS t
+    -- Se realiza junta con la tabla de consorcios utilizando el campo de nombre
     INNER JOIN ddbba.consorcio AS c
         ON LTRIM(RTRIM(UPPER(c.nombre))) = LTRIM(RTRIM(UPPER(t.nom_consorcio)))
+    -- Se verifica que no existe aun una unidad funcional que tenga el mismo ID y pertenezca al mismo consorcio. (Control de insercion de duplicados)
     WHERE NOT EXISTS (
         SELECT 1 FROM ddbba.unidad_funcional uf
         WHERE uf.id_consorcio = c.id_consorcio
@@ -823,163 +861,149 @@ BEGIN
     );
 
     PRINT 'Datos insertados en la tabla final.';
+    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + 'unidades funcionales fueron importadas.';
     PRINT '--- Proceso  importacion de unidades funcionales por consorcio finalizado ---';
 
     DROP TABLE IF EXISTS #temp_UF;
 END
 GO
 
-
----------------------------------------------------------------------
--- RELACIONA INQUILINOS CON UNIDADES FUNCIONALES (Inquilino-propietarios-UF.csv)
----------------------------------------------------------------------
+/* --- RELACIONA INQUILINOS CON UNIDADES FUNCIONALES (Inquilino-propietarios-UF.csv) --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_inquilinos_uf
-    @ruta_archivo VARCHAR(4000)
+    @ruta_archivo VARCHAR(4000)
 AS
 BEGIN
-    SET NOCOUNT ON;
-    -- Cargar el archivo de inquilinos-UF
-    PRINT '--- Iniciando importación de datos de inquilino - UF ---';
-    
-    IF OBJECT_ID('tempdb..#InquilinosUFTemp') IS NOT NULL
-        DROP TABLE #InquilinosUFTemp;
-    IF OBJECT_ID('tempdb..#TempLimpia') IS NOT NULL
-        DROP TABLE #TempLimpia;
+    SET NOCOUNT ON;
 
-    CREATE TABLE #InquilinosUFTemp (
-        CVU_CBU VARCHAR(23),
-        nombre_consorcio VARCHAR(80),
-        id_unidad_funcional INT,
-        piso CHAR(2),
-        depto CHAR(2)
-    );
+    PRINT '--- Iniciando importación de datos de inquilino - UF ---';
 
-    PRINT 'Tabla temporal #InquilinosUFTemp creada.';
+    --- Se crea la tabla temporal global para staging
+    IF OBJECT_ID('tempdb..##InquilinosUFTemp') IS NOT NULL 
+        DROP TABLE ##InquilinosUFTemp;
+    CREATE TABLE ##InquilinosUFTemp (
+        CVU_CBU VARCHAR(23),
+        nombre_consorcio VARCHAR(80),
+        id_unidad_funcional INT,
+        piso CHAR(2),
+        depto CHAR(2)
+    );
 
-    -- Cargar datos desde el CSV usando BULK INSERT
-    DECLARE @sql NVARCHAR(MAX);
-    SET @sql = N'
-        BULK INSERT #InquilinosUFTemp
-        FROM ''' + @ruta_archivo + N'''
-        WITH (
-            FIELDTERMINATOR = ''|'',
-            ROWTERMINATOR = ''\n'',
-            FIRSTROW = 2,
-            TABLOCK
-        );
-    ';
+    PRINT 'Tabla temporal ##InquilinosUFTemp creada.';
 
-    EXEC sp_executesql @sql;
+    -- Se importa el CSV con BULK INSERT
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        BULK INSERT ##InquilinosUFTemp
+        FROM ''' + @ruta_archivo + N'''
+        WITH (
+            FIELDTERMINATOR = ''|'',
+            ROWTERMINATOR = ''\n'',
+            FIRSTROW = 2,
+            TABLOCK
+        );
+    ';
 
-    --  Limpieza de datos en la tabla temporal
-    UPDATE #InquilinosUFTemp
-    SET depto = RTRIM(REPLACE(REPLACE(depto, CHAR(13), ''), CHAR(10), ''));
+    EXEC sp_executesql @sql;
 
-	-- Eliminar duplicados en el archivo
-    ;WITH SourceDeduplicada AS (
-        SELECT 
-            iuf.CVU_CBU,
-            iuf.nombre_consorcio,
-            iuf.id_unidad_funcional,
-            iuf.piso,
-            iuf.depto,
-            -- Asigna un número de fila para duplicados en el archivo
-            ROW_NUMBER() OVER(
-                PARTITION BY 
-                    iuf.CVU_CBU, 
-                    iuf.nombre_consorcio, 
-                    iuf.id_unidad_funcional
-                ORDER BY (SELECT NULL)
-            ) AS rn
-        FROM #InquilinosUFTemp iuf
-    )
-    -- Guardamos la data limpia en una nueva tabla temporal
-    SELECT *
-    INTO #TempLimpia
-    FROM SourceDeduplicada
-    WHERE rn = 1;
 
-   	-- Crear el rol correspondiente 
-    INSERT INTO ddbba.rol(id_unidad_funcional, id_consorcio, nombre_rol, nro_documento, tipo_documento, activo, fecha_inicio)
-    SELECT 
-        uf.id_unidad_funcional,
-        c.id_consorcio,
-        CASE 
-            WHEN g.Inquilino = 1 THEN 'inquilino'
-            ELSE 'propietario'
-        END AS nombre_rol,
-        p.nro_documento,
-        p.tipo_documento,
-        1 AS activo,
-        GETDATE() AS fecha_inicio
-    FROM #TempLimpia iuf -- Usamos la tabla limpia
-    JOIN ##InquilinosTemp_global g 
-       ON g.CVU_CBU = iuf.CVU_CBU
-    JOIN ddbba.persona p 
-        ON p.cbu = iuf.CVU_CBU
-    JOIN ddbba.consorcio c 
-        ON c.nombre = iuf.nombre_consorcio
-    JOIN ddbba.unidad_funcional uf
-        ON uf.id_consorcio = c.id_consorcio
-        AND uf.id_unidad_funcional = iuf.id_unidad_funcional
-    WHERE
-        NOT EXISTS (
-            SELECT 1
-            FROM ddbba.rol r
-            WHERE r.id_unidad_funcional = uf.id_unidad_funcional
-              AND r.nro_documento = p.nro_documento
-              AND r.tipo_documento = p.tipo_documento
-              AND r.nombre_rol = CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END
-              AND r.activo = 1
-        );
+    -- Se realiza limpieza de datos
+    UPDATE ##InquilinosUFTemp
+    SET depto = RTRIM(REPLACE(REPLACE(depto, CHAR(13), ''), CHAR(10), ''));
 
-    --Actualiza el CBU en la unidad funcional
-    UPDATE uf
-    SET uf.cbu = iuf.CVU_CBU
-    FROM ddbba.unidad_funcional uf
-    INNER JOIN ddbba.consorcio c 
-        ON uf.id_consorcio = c.id_consorcio
-    INNER JOIN #TempLimpia iuf -- Usamos la tabla limpia
-        ON LTRIM(RTRIM(iuf.nombre_consorcio)) = LTRIM(RTRIM(c.nombre))
-        AND uf.id_unidad_funcional = iuf.id_unidad_funcional
-        AND ISNULL(LTRIM(RTRIM(uf.piso)), '') = ISNULL(LTRIM(RTRIM(iuf.piso)), '')
-	    AND ISNULL(LTRIM(RTRIM(uf.departamento)), '') = ISNULL(LTRIM(RTRIM(iuf.depto)), '');
 
-    DROP TABLE #InquilinosUFTemp;
-    DROP TABLE #TempLimpia;
-    DROP TABLE ##InquilinosTemp_global;
-    
-    PRINT '--- Proceso de relación Inquilino-UF finalizado ---';
+    -- Se eliminan datos duplicados que puedan provenir del archivo
+    ;WITH D AS (
+        SELECT *,
+               ROW_NUMBER() OVER (
+                        PARTITION BY CVU_CBU, nombre_consorcio, id_unidad_funcional
+                        ORDER BY (SELECT NULL)
+                    ) as rn
+        FROM ##InquilinosUFTemp
+    )
+    DELETE FROM D WHERE rn > 1;
+
+
+    -- Se insertan las personas en la tabla de roles
+    INSERT INTO ddbba.rol
+        (id_unidad_funcional, id_consorcio, nombre_rol, nro_documento, 
+         tipo_documento, activo, fecha_inicio)
+    SELECT
+        uf.id_unidad_funcional,
+        c.id_consorcio,
+        CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END,
+        p.nro_documento,
+        p.tipo_documento,
+        1,
+        GETDATE()
+    FROM ##InquilinosUFTemp iuf
+    JOIN ##InquilinosTemp_global g ON g.CVU_CBU = iuf.CVU_CBU -- Se asocia la persona con la uf segun el CBU
+    JOIN ddbba.persona p ON p.nro_documento = g.DNI 
+    JOIN ddbba.consorcio c ON c.nombre = iuf.nombre_consorcio -- Se busca el id de consorcio segun el nombre
+    JOIN ddbba.unidad_funcional uf 
+         ON uf.id_consorcio = c.id_consorcio
+        AND uf.id_unidad_funcional = iuf.id_unidad_funcional
+    WHERE NOT EXISTS ( -- Se verifica que no exista aun un rol que tenga la misma uf, documento, tipo, mismo rol y que este activo.
+        SELECT 1
+        FROM ddbba.rol r
+        WHERE r.id_unidad_funcional = uf.id_unidad_funcional
+          AND r.nro_documento = p.nro_documento
+          AND r.tipo_documento = p.tipo_documento
+          AND r.nombre_rol = CASE WHEN g.Inquilino = 1 THEN 'inquilino' ELSE 'propietario' END
+          AND r.activo = 1
+    );
+
+    PRINT '--- Proceso de relación Inquilino-UF finalizado ---';
 END;
 GO
 
-
----------------------------------------------------------------------
--- RELACIONA PAGOS CON UNIDAD FUNCIONAL
----------------------------------------------------------------------
+/* --- RELACIONA PAGOS CON UNIDAD FUNCIONAL --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
 AS
 BEGIN
     SET NOCOUNT ON;
-    PRINT '--- Iniciando la asociacion de pagos... ---';
+    -- Este SP se relaciona con la tabla de consorcio, uf y pagos
+    PRINT '--- Iniciando la asociacion e INSERCION de pagos... ---';
 
-    UPDATE p
-    SET 
-        p.id_unidad_funcional = uf.id_unidad_funcional,
-        p.estado = 'asociado',
-        p.id_consorcio = uf.id_consorcio
-    FROM ddbba.pago AS p
-    JOIN ddbba.unidad_funcional AS uf ON p.cbu_origen = uf.cbu
-    WHERE p.id_unidad_funcional IS NULL;
+    -- Se eliminan los registros duplicados en la tabla de pagos
+    ;WITH C AS (
+        SELECT *,
+               ROW_NUMBER() OVER (PARTITION BY id_pago  ORDER BY (SELECT NULL)) AS rn
+        FROM ##temp_pagos
+    )
+    DELETE FROM C WHERE rn > 1;
 
-    PRINT CAST(@@ROWCOUNT AS VARCHAR(10)) + ' pagos fueron asociados.';
-    PRINT '--- Finaliza la asociacion de pagos... ---';
+    -- Se insertan los pagos utilizando los datos de las tablas temporales ##temp_pagos y ##InquilinosUFTemp (STAGING) 
+    INSERT INTO ddbba.pago (id_pago, fecha_pago, monto, 
+                            cbu_origen, estado, id_unidad_funcional,   
+                            id_consorcio, id_expensa)
+    SELECT 
+        tp.id_pago,
+        tp.fecha,
+        ddbba.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto, 
+        tp.cbu, 
+        'asociado',
+        uf.id_unidad_funcional, 
+        c.id_consorcio,
+        UltimaExpensa.id_expensa 
+    FROM ##temp_pagos AS tp
+    INNER JOIN ##InquilinosUFTemp AS iuf ON tp.cbu = iuf.CVU_CBU -- Se busca la fila donde coincida CBU de inquilino en (##InquilinosUFTemp) con cbu del pago
+    INNER JOIN ddbba.consorcio AS c ON c.nombre = iuf.nombre_consorcio -- Se busca el consorcio al que pertenece la UF del pago
+    INNER JOIN ddbba.unidad_funcional AS uf ON uf.id_consorcio = c.id_consorcio AND uf.departamento = iuf.depto and uf.piso = iuf.piso
+    CROSS APPLY (
+        -- Busca la expensa más reciente PARA ESE CONSORCIO que se haya emitido ANTES O EL MISMO DÍA del pago.
+        SELECT TOP 1 e.id_expensa
+        FROM ddbba.expensa AS e
+        WHERE e.id_consorcio = c.id_consorcio AND e.fecha_emision <= tp.fecha
+        ORDER BY e.fecha_emision DESC
+    ) AS UltimaExpensa
+    -- Control de insercion de duplicados. No puede existir ya en la tabla un registro con el mismo id. 
+    WHERE NOT EXISTS (
+        SELECT 1 FROM ddbba.pago p WHERE p.id_pago = tp.id_pago
+    );
 END
 GO
 
----------------------------------------------------------------------
--- GENERA PRORRATEO
----------------------------------------------------------------------
+/* ---  GENERA PRORRATEO --- */
 CREATE OR ALTER PROCEDURE ddbba.sp_actualizar_prorrateo
 AS
 BEGIN
@@ -996,33 +1020,539 @@ BEGIN
     ) AS tot
         ON uf.id_consorcio = tot.id_consorcio;
 
+    PRINT 'Se calculo el prorrateo de' + CAST(@@ROWCOUNT AS VARCHAR(10)) + 'unidades funcionales.';
     PRINT '---- Finaliza calculo de prorrateo por unidad funcional ----';
 END
 GO
 
--------------------------------------------------------
--- IMPORTA TODOS LOS ARCHIVOS
--------------------------------------------------------
+create or alter procedure ddbba.sp_actualizar_cbu_uf
+as
+begin
+    PRINT 'Actualizando CBU en unidad_funcional...';
+
+    UPDATE uf
+    SET uf.cbu = itg.CVU_CBU
+    FROM ddbba.unidad_funcional uf
+    INNER JOIN ##InquilinosUFTemp iuf ON uf.id_consorcio = uf.id_consorcio AND uf.departamento = iuf.depto  AND uf.piso = iuf.piso
+    INNER JOIN ##InquilinosTemp_global itg on itg.CVU_CBU = iuf.CVU_CBU
+
+    PRINT CAST(@@ROWCOUNT AS VARCHAR(10))  + ' unidades funcionales actualizadas con CBU.';
+end
+go
+
+/* --- EJECUTA TODOS LOS SP PARA IMPORTAR ARCHIVOS --- */
 create or alter procedure ddbba.sp_importar_archivos
 as
 begin	
-	exec ddbba.sp_importar_consorcios @ruta_archivo = 'C:\datos varios.xlsx'
-	exec ddbba.sp_importar_proveedores @ruta_archivo ='C:\datos varios.xlsx' 
-	exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\pagos_consorcios.csv'
-	exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\UF por consorcio.txt' 
-	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Inquilino-propietarios-datos.csv'
-	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Servicios.Servicios.json', @anio=2025
-    exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Inquilino-propietarios-UF.csv'
+	exec ddbba.sp_importar_consorcios @ruta_archivo = 'C:\Archivos para el tp\datos varios.xlsx'
+	exec ddbba.sp_importar_proveedores @ruta_archivo ='C:\Archivos para el tp\datos varios.xlsx' 
+	exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el tp\pagos_consorcios.csv'
+	exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Archivos para el tp\UF por consorcio.txt' 
+	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-datos.csv'
+	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el tp\Servicios.Servicios.json', @anio=2025
+    exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-UF.csv'
+    exec ddbba.sp_actualizar_cbu_uf
 	exec ddbba.sp_relacionar_pagos
 	exec ddbba.sp_actualizar_prorrateo
 end
+go
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE CREACION DE PROCEDIMIENTOS PARA IMPORTAR ARCHIVOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA GENERAR REPORTES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+-------------------------------------------------------------------------------------------------
+/* ---
+    Reporte 1.
+        Flujo de caja semanal:
+            - Total recaudado por semana
+            - Promedio en el periodo
+            - Acumulado progresivo
+--- */
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_1
+    @id_consorcio INT = NULL, 
+    @anio_desde INT = NULL,   
+    @anio_hasta INT = NULL
+WITH EXECUTE AS owner
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @sql NVARCHAR(MAX);
+    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
+
+    -- Se contruyen filtros dinamicos concatenando a la cadena del where según si el parámetro fue pasado al sp o no.
+    IF @id_consorcio IS NOT NULL
+        SET @where += N' AND e.id_consorcio = @id_consorcio ';
+
+    IF @anio_desde IS NOT NULL
+        SET @where += N' AND YEAR(p.fecha_pago) >= @anio_desde ';
+
+    IF @anio_hasta IS NOT NULL
+        SET @where += N' AND YEAR(p.fecha_pago) <= @anio_hasta ';
+
+    --- Se utiliza SQL dinámico para la utilización del where con la lógica de concatenación. 
+    SET @sql = N'
+        WITH Pagos AS (
+            SELECT
+                p.id_pago, p.monto, p.fecha_pago,
+                YEAR(p.fecha_pago) AS anio, DATEPART(WEEK, p.fecha_pago) AS semana
+            FROM ddbba.pago p
+            LEFT JOIN ddbba.expensa e ON e.id_expensa = p.id_expensa
+            ' + @where + N'
+        ),
+        TotalSemanal AS (
+            SELECT anio, semana,
+                SUM(monto) AS total_semanal
+            FROM Pagos 
+            GROUP BY anio, semana
+        )
+        SELECT 
+            anio, semana, total_semanal,
+            AVG(total_semanal) OVER () AS promedio_general,
+            SUM(total_semanal) OVER (ORDER BY anio, semana) AS acumulado_progresivo
+        FROM TotalSemanal
+        ORDER BY anio, semana;
+    ';
+
+    EXEC sp_executesql 
+        @sql,
+        N'@id_consorcio INT, @anio_desde INT, @anio_hasta INT',
+        @id_consorcio=@id_consorcio,
+        @anio_desde=@anio_desde,
+        @anio_hasta=@anio_hasta;
+END;
+GO
 
 ----------------------------------------------------------------------------------------------------------
---CREACION DE LOS SP PARA GENERAR LOS DATOS RANDOM
----------------------------------------------------------------------------------------------------
+/*
+    Reporte 2
+        Presente el total de recaudación por mes y departamento en formato de tabla cruzada. 
+*/
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
+    @min  DECIMAL(12,2) = NULL, 
+    @max  DECIMAL(12,2) = NULL,
+    @anio INT = NULL
+WITH EXECUTE AS owner
+AS
+BEGIN
+    SET NOCOUNT ON;
 
--- Generar Cuotas Random
+    DECLARE @cols NVARCHAR(MAX);
+    DECLARE @sql NVARCHAR(MAX);
+    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
+    DECLARE @having NVARCHAR(MAX) = N'';
+
+    -- Se contruyen filtros dinamicos concatenando a la cadena del where según si el parámetro fue pasado al sp o no.
+     IF @anio IS NOT NULL
+        SET @where += N' AND YEAR(p.fecha_pago) = @anio ';
+    IF @min IS NOT NULL AND @max IS NOT NULL
+        SET @having = N' HAVING SUM(p.monto) BETWEEN @min AND @max ';
+    ELSE IF @min IS NOT NULL
+        SET @having = N' HAVING SUM(p.monto) >= @min ';
+    ELSE IF @max IS NOT NULL
+        SET @having = N' HAVING SUM(p.monto) <= @max ';
+
+    -- Se limpian los datos de departamento y se obtienen las columnas del PIVOT
+    SELECT 
+        @cols = STRING_AGG(
+                    QUOTENAME(REPLACE(LTRIM(RTRIM(departamento)), ' ', '_')),
+                    ','
+                 )
+    FROM (
+        SELECT DISTINCT departamento
+        FROM ddbba.unidad_funcional
+    ) AS d;
+
+    -- Se construye el SQL dinamico con los filtros generados previamente
+    SET @sql = N'
+        WITH mes_uf_CTE AS (
+            SELECT 
+                FORMAT(p.fecha_pago, ''yyyy-MM'') AS mes, 
+                REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'') AS departamento,
+                SUM(p.monto) AS total_monto
+            FROM ddbba.pago p
+            JOIN ddbba.unidad_funcional uf  
+                ON uf.id_unidad_funcional = p.id_unidad_funcional
+            ' + @where + N'
+            GROUP BY FORMAT(p.fecha_pago, ''yyyy-MM''), 
+                     REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'')
+            ' + @having + N'
+        )
+        SELECT mes, ' + @cols + N'
+        FROM mes_uf_CTE
+        PIVOT (
+            SUM(total_monto)
+            FOR departamento IN (' + @cols + N')
+        ) AS tabla_cruzada
+        ORDER BY mes
+        FOR XML PATH(''Mes''), ROOT(''Recaudacion''), ELEMENTS XSINIL;
+    ';
+
+    EXEC sp_executesql 
+        @sql,
+        N'@min DECIMAL(12,2), @max DECIMAL(12,2), @anio INT',
+        @min=@min, @max=@max, @anio=@anio;
+END;
+GO
+
+--------------------------------------------------------------------------------------
+ /*
+    Reporte 3
+        Presente un cuadro cruzado con la recaudación total desagregada según su procedencia
+        (ordinario, extraordinario, etc.) según el periodo.
+*/
+--IMPORTANTE (ANTES DE EJECUTAR EL SP):
+--Para ejecutar un llamado a una API desde SQL primero vamos a tener que habilitar ciertos permisos que por default vienen bloqueados
+--'Ole Automation Procedures' permite a SQL Server utilizar el controlador OLE para interactuar con los objetos
+
+EXEC sp_configure 'show advanced options', 1;	--Para poder editar los permisos avanzados
+RECONFIGURE;
+GO
+EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avanzada de OLE
+RECONFIGURE;
+GO
+
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_3
+    @FechaDesde DATE = NULL,
+    @FechaHasta DATE = NULL,
+    @IdConsorcio INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    --Estamos usando una API que devuelve el valor del dolar oficial, blue y el euro en tipo de cambio comprador y vendedor
+    --Referencia: https://api.bluelytics.com.ar/
+
+    -- ================================================
+    -- Obtener el valor del dolar oficial (value_buy)
+    -- ================================================
+
+    --Vamos a convertir el valor total recaudado y sus desgloses a USD oficial, tipo de cambio comprador
+    --Para eso, primero armamos el URL del llamado
+
+    DECLARE @url NVARCHAR(256) = 'https://api.bluelytics.com.ar/v2/latest';
+
+    DECLARE @Object INT;
+    DECLARE @json TABLE(DATA NVARCHAR(MAX));
+    DECLARE @datos NVARCHAR(MAX); --La usaremos para la posterior interpretacion del json
+    DECLARE @valor_dolar DECIMAL(10,2);
+    DECLARE @fecha_dolar DATETIME2; --Usamos datetime2 porque datetime esta limitada en el rango de anios
+
+    BEGIN TRY
+        EXEC sp_OACreate 'MSXML2.XMLHTTP', @Object OUT; -- Creamos una instancia de OLE que nos permite hacer los llamados
+        EXEC sp_OAMethod @Object, 'OPEN', NULL, 'GET', @url, 'FALSE'; -- Definimos algunas propiedades del objeto para hacer una llamada HTTP Get
+        EXEC sp_OAMethod @Object, 'SEND';
+
+        --Si el SP devuelve una tabla, lo podemos almacenar con INSERT
+
+        INSERT INTO @json EXEC sp_OAGetProperty @Object, 'ResponseText'; --Obtenemos el valor de la propiedad 'ResponseText' del objeto OLE despues de realizar la consulta
+        EXEC sp_OADestroy @Object;
+
+        --Interpretamos el JSON
+
+        SET @datos = (SELECT DATA FROM @json);
+
+        -- Extraemos el valor del dolar y la ultima fecha de actualizacion
+
+        SELECT 
+            @valor_dolar = JSON_VALUE(@datos, '$.oficial.value_buy'),
+            @fecha_dolar = JSON_VALUE(@datos, '$.last_update');
+    END TRY
+    BEGIN CATCH
+        PRINT 'Error al obtener el valor del dolar. Se usara 1 como valor por defecto.'; --Por si falla
+        SET @valor_dolar = 1;
+        SET @fecha_dolar = GETDATE();
+    END CATCH;
+
+    -- ============================================
+    -- Consulta principal de recaudacion
+    -- ============================================
+
+    WITH gastos_union AS (
+        SELECT
+
+        --Total de Gastos Ordinarios dentro del periodo
+
+            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
+            'Ordinario' AS Tipo,
+            gaor.importe AS Importe
+        FROM ddbba.expensa e
+        INNER JOIN ddbba.gastos_ordinarios gaor 
+            ON e.id_expensa = gaor.id_expensa
+        WHERE 
+            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
+
+        UNION ALL
+
+        SELECT
+
+        --Total de Gastos Extraordinarios dentro del periodo
+
+            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
+            'Extraordinario' AS Tipo,
+            ge.importe_total AS Importe
+        FROM ddbba.expensa e
+        INNER JOIN ddbba.gasto_extraordinario ge 
+            ON e.id_expensa = ge.id_expensa
+        WHERE 
+            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
+    )
+
+    --Consulta final con los valores desagregados a mostrar
+
+    SELECT 
+        Periodo,
+        ISNULL([Ordinario], 0) AS Total_Ordinario,
+        CAST(ROUND((ISNULL([Ordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Ordinario_USD, --Casteamos a DECIMAL y redondeamos a dos digitos
+        ISNULL([Extraordinario], 0) AS Total_Extraordinario,
+        CAST(ROUND((ISNULL(Extraordinario, 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Extraordinario_USD,
+        ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0) AS Total_Recaudado,
+        CAST(ROUND((ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Recaudado_USD
+    FROM gastos_union
+    PIVOT (
+        SUM(Importe)
+        FOR Tipo IN ([Ordinario], [Extraordinario])
+    ) AS pvt
+    ORDER BY Periodo;
+
+
+    -- ============================================
+    -- Extraer dolar oficial y fecha
+    -- ============================================
+
+    --Podemos mostrar el valor del dolar actual y la ultima fecha de actualizacion en una consulta separada
+    --para que quien ejecute el reporte este al tanto de que valor se utilizo al momento de ejecutarse el SP
+
+    SELECT 
+        CAST(JSON_VALUE(@datos, '$.oficial.value_buy') AS DECIMAL(10,2)) AS Dolar_Oficial_Compra,
+        CONVERT(VARCHAR(19), TRY_CAST(JSON_VALUE(@datos, '$.last_update') AS DATETIME2), 120) AS Fecha_Actualizacion
+
+END;
+
+GO
+
+-------------------------------------------------------------------------------------------------
+/*
+    Reporte 4. 
+        Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
+*/
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_4
+    @id_consorcio INT = NULL,  -- filtrar por consorcio
+    @AnioDesde INT = NULL,     -- año desde
+    @AnioHasta INT = NULL      --  año hasta
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FechaDesde DATE = NULL;
+    DECLARE @FechaHasta DATE = NULL;
+
+    -- Rango de fechas
+    IF @AnioDesde IS NOT NULL
+        SET @FechaDesde = DATEFROMPARTS(@AnioDesde, 1, 1);
+    IF @AnioHasta IS NOT NULL
+        SET @FechaHasta = DATEFROMPARTS(@AnioHasta, 12, 31);
+
+
+    -- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
+    ;WITH GastosUnificados AS (
+        SELECT 
+            YEAR(e.fecha_emision) AS Anio,
+            MONTH(e.fecha_emision) AS Mes,
+            gor.importe AS Monto,
+            'Ordinario' AS TipoGasto,
+            e.id_consorcio
+        FROM ddbba.gastos_ordinarios gor
+        INNER JOIN ddbba.expensa e ON gor.id_expensa = e.id_expensa
+        WHERE 
+            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
+            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+
+        UNION ALL
+
+        SELECT 
+            YEAR(e.fecha_emision) AS Anio,
+            MONTH(e.fecha_emision) AS Mes,
+            ge.importe_total AS Monto,
+            'Extraordinario' AS TipoGasto,
+            e.id_consorcio
+        FROM ddbba.gasto_extraordinario ge
+        INNER JOIN ddbba.expensa e ON ge.id_expensa = e.id_expensa
+        WHERE 
+            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
+            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+    ),
+    GastosMensuales AS (
+        SELECT 
+            Anio,
+            Mes,
+            DATENAME(MONTH, DATEFROMPARTS(Anio, Mes, 1)) AS NombreMes,
+            SUM(Monto) AS TotalGastos,
+            SUM(CASE WHEN TipoGasto = 'Ordinario' THEN Monto ELSE 0 END) AS GastosOrdinarios,
+            SUM(CASE WHEN TipoGasto = 'Extraordinario' THEN Monto ELSE 0 END) AS GastosExtraordinarios,
+            COUNT(*) AS CantidadGastos,
+            COUNT(CASE WHEN TipoGasto = 'Ordinario' THEN 1 END) AS CantOrdinarios,
+            COUNT(CASE WHEN TipoGasto = 'Extraordinario' THEN 1 END) AS CantExtraordinarios
+        FROM GastosUnificados
+        GROUP BY Anio, Mes
+    )
+    SELECT TOP 5
+        Anio AS [@Anio],
+        Mes AS [@Mes],
+        NombreMes AS [@NombreMes],
+        TotalGastos AS [@TotalGastos],
+        GastosOrdinarios AS [@GastosOrdinarios],
+        GastosExtraordinarios AS [@GastosExtraordinarios],
+        CantidadGastos AS [@CantidadGastos],
+        CantOrdinarios AS [@CantOrdinarios],
+        CantExtraordinarios AS [@CantExtraordinarios],
+        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
+    FROM GastosMensuales
+    ORDER BY TotalGastos DESC
+    FOR XML PATH('Mes'), ROOT('Top5MesesGastos'), TYPE;
+
+
+    --  TOP 5 MESES CON MAYORES INGRESOS
+    ;WITH IngresosMensuales AS (
+        SELECT 
+            YEAR(p.fecha_pago) AS Anio,
+            MONTH(p.fecha_pago) AS Mes,
+            DATENAME(MONTH, p.fecha_pago) AS NombreMes,
+            SUM(p.monto) AS TotalIngresos,
+            COUNT(*) AS CantidadPagos,
+            COUNT(DISTINCT p.id_unidad_funcional) AS UnidadesPagaron
+        FROM ddbba.pago p
+        WHERE 
+            p.estado = 'Aprobado'
+            AND (@id_consorcio IS NULL OR p.id_consorcio = @id_consorcio)
+            AND (@FechaDesde IS NULL OR p.fecha_pago >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR p.fecha_pago <= @FechaHasta)
+        GROUP BY 
+            YEAR(p.fecha_pago),
+            MONTH(p.fecha_pago),
+            DATENAME(MONTH, p.fecha_pago)
+    )
+    ---genera el XML
+    SELECT TOP 5
+        Anio AS [@Anio],
+        Mes AS [@Mes],
+        NombreMes AS [@NombreMes],
+        TotalIngresos AS [@TotalIngresos],
+        CantidadPagos AS [@CantidadPagos],
+        UnidadesPagaron AS [@UnidadesPagaron],
+        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
+    FROM IngresosMensuales
+    ORDER BY TotalIngresos DESC
+    FOR XML PATH('Mes'), ROOT('Top5MesesIngresos'), TYPE;
+
+END;
+GO
+
+
+--------------------------------------------------------------------------------------------
+/*
+    Reporte 5:
+        Obtenga los 3 (tres) propietarios con mayor morosidad. Presente información de contacto y
+        DNI de los propietarios para que la administración los pueda contactar o remitir el trámite al
+        estudio jurídico.
+*/
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
+    @id_consorcio INT = NULL,
+    @fecha_desde DATE = NULL,
+    @fecha_hasta DATE = NULL,
+    @limite INT = 3
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (@limite)
+        p.nro_documento,
+        p.tipo_documento,
+        p.nombre,
+        p.mail,
+        p.telefono,
+        SUM(ISNULL(depuf.deuda, 0)) AS total_deuda
+    FROM ddbba.persona p
+    INNER JOIN ddbba.rol r
+        ON p.nro_documento = r.nro_documento
+        AND p.tipo_documento = r.tipo_documento
+        AND r.nombre_rol = 'Propietario'
+    INNER JOIN ddbba.unidad_funcional uf
+        ON r.id_unidad_funcional = uf.id_unidad_funcional
+        AND r.id_consorcio = uf.id_consorcio
+    INNER JOIN ddbba.detalle_expensas_por_uf depuf
+        ON uf.id_unidad_funcional = depuf.id_unidad_funcional
+        AND uf.id_consorcio = depuf.id_consorcio
+    INNER JOIN ddbba.expensa e
+        ON depuf.id_expensa = e.id_expensa
+    WHERE (@id_consorcio IS NULL OR uf.id_consorcio = @id_consorcio)
+      AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
+      AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
+    GROUP BY
+        p.nro_documento,
+        p.tipo_documento,
+        p.nombre,
+        p.mail,
+        p.telefono
+    HAVING SUM(ISNULL(depuf.deuda, 0)) > 0
+    ORDER BY total_deuda DESC;
+END;
+GO
+
+-------------------------------------------------------------------------------------------------
+/*
+    Reporte 6
+        Muestre las fechas de pagos de expensas ordinarias de cada UF y la cantidad de días que
+        pasan entre un pago y el siguiente, para el conjunto examinado.
+
+*/
+
+CREATE OR ALTER PROCEDURE ddbba.sp_reporte_6
+    @id_unidad_funcional INT = NULL,
+    @fecha_desde DATE = NULL,
+    @fecha_hasta DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH PagosUnicos AS (
+        SELECT DISTINCT
+            p.id_unidad_funcional,
+            p.id_expensa,
+            CAST(p.fecha_pago AS DATE) AS fecha_pago
+        FROM ddbba.pago p
+        INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
+        INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
+        INNER JOIN ddbba.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
+        WHERE
+            (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
+            AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
+    ),
+    PagosConLag AS (
+        SELECT
+            *,
+            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior
+        FROM PagosUnicos
+    )
+    SELECT
+        id_unidad_funcional,
+        id_expensa,
+        fecha_pago,
+        Fecha_Pago_Anterior,
+        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos
+    FROM PagosConLag
+    ORDER BY id_unidad_funcional, fecha_pago;
+END
+GO
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN DE LA CREACION DE PROCEDIMIENTOS PARA GENERAR REPORTES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA GENERAR DATOS ADICIONALES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/* --- GENERA CUOTAS CORRESPONDIENTES A GASTOS EXTRAORDINARIOS ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_cuotas
 AS
 BEGIN
@@ -1042,8 +1572,8 @@ BEGIN
     );
 END
 GO
-----------------------------------------------------------------------------------------------------
--- Generar Envíos de Expensas Random
+
+/* --- Generar Envíos de Expensas Random ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_envios_expensas
     @CantidadRegistros INT 
 AS
@@ -1106,10 +1636,7 @@ BEGIN
 END
 GO
 
-
-----------------------------------------------------------------------------------------
---Generar Gastos Extraordinarios Random
-
+/*--- GENERA GASTOS EXTRAORDINARIOS RELACIONADOS A EXPENSA ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_gastos_extraordinarios
     @CantidadRegistros INT 
 AS
@@ -1155,9 +1682,7 @@ BEGIN
 END
 GO
 
---------------------------------------------------------------------------------------
--- Generar Pagos Random
-
+/*--- GENERA PAGOS ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_pagos
     @CantidadRegistros INT 
 AS
@@ -1250,9 +1775,7 @@ BEGIN
 END
 GO
 
-----------------------------------------------------------------
---Generar Tipos de Envío Random
-
+/*--- GENERA LOS TIPOS DE ENVIO---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_tipos_envio_random
 AS
 BEGIN
@@ -1272,9 +1795,8 @@ BEGIN
     PRINT 'Se generaron los tipos de envío predefinidos.';
 END
 GO
----------------------------------------------------------------------------
--- Generar vencimientos de expensas
 
+/* --- GENERA VENCIMIENTO DE EXPENSAS ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_vencimientos_expensas
     @dias_primer_vencimiento INT ,  -- Días después de emisión para 1er vencimiento
     @dias_segundo_vencimiento INT   -- Días después de emisión para 2do vencimiento
@@ -1318,14 +1840,13 @@ BEGIN
     END CATCH
 END;
 GO
---------------------------------------------------------
--- Generar detalle de expensas por uf
+
+/*--- CALCULA DETALLES DE EXPENSA POR UNIDAD FUNCIONAL ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_detalle_expensas_por_uf
     @cantidad INT 
 AS
 BEGIN
     SET NOCOUNT ON;
-
 
     DECLARE 
         @i INT = 1,
@@ -1443,8 +1964,8 @@ BEGIN
     PRINT N' Generación de detalle_expensas_por_uf finalizada correctamente.';
 END;
 GO
-------------------------------------------------------------------------------------------
---Generar Estados financieros
+ 
+/*--- CALCULA LOS ESTADOS FINANCIEROS (Corresponde a UF)---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_generar_estado_financiero
 AS
 BEGIN
@@ -1522,1202 +2043,21 @@ BEGIN
 END;
 GO
 
-
+/*--- EJECUTA TODOS LOS SP CREADOS ---*/
 CREATE OR ALTER PROCEDURE ddbba.sp_crear_datos_adicionales
 as
 begin
 	
-	EXEC ddbba.sp_GenerarTiposEnvioRandom;
-	EXEC ddbba.sp_GenerarEnviosExpensas @CantidadRegistros = 10;
+	EXEC ddbba.sp_generar_tipos_envio_random;
+	EXEC ddbba.sp_generar_envios_expensas @CantidadRegistros = 10;
 	EXEC ddbba.sp_generar_estado_financiero;
-	EXEC ddbba.sp_GenerarGastosExtraordinarios @CantidadRegistros = 10;
-	EXEC ddbba.sp_GenerarCuotas ;
-	EXEC ddbba.sp_GenerarPagos @CantidadRegistros = 10
+	EXEC ddbba.sp_generar_gastos_extraordinarios @CantidadRegistros = 10;
+	EXEC ddbba.sp_generar_cuotas ;
+	EXEC ddbba.sp_generar_pagos @CantidadRegistros = 10
 	EXEC ddbba.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
 	EXEC ddbba.sp_generar_detalle_expensas_por_uf @cantidad=10
 
 end;
 
-
-
-
----------------------------------------------------------------------------------------------------------------
---CREACION DE TODOS LOS SP PARA LOS REPORTES
--------------------------------------------------------------------------------------------------------------
-
-/*
-    Reporte 1
-    Flujo de caja semanal:
-    - Total recaudado por semana
-    - Promedio en el periodo
-    - Acumulado progresivo
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_1
-    @id_consorcio INT = NULL, 
-    @anio_desde INT = NULL,   
-    @anio_hasta INT = NULL
-WITH EXECUTE AS owner
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @sql NVARCHAR(MAX);
-    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
-
-    -- Filtros dinámicos
-    IF @id_consorcio IS NOT NULL
-        SET @where += N' AND e.id_consorcio = @id_consorcio ';
-
-    IF @anio_desde IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) >= @anio_desde ';
-
-    IF @anio_hasta IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) <= @anio_hasta ';
-
-
-    SET @sql = N'
-        WITH Pagos AS (
-            SELECT
-                p.id_pago,
-                p.monto,
-                p.fecha_pago,
-                YEAR(p.fecha_pago) AS anio,
-                DATEPART(WEEK, p.fecha_pago) AS semana
-            FROM ddbba.pago p
-            LEFT JOIN ddbba.expensa e ON e.id_expensa = p.id_expensa
-            ' + @where + N'
-        ),
-
-        TotalSemanal AS (
-            SELECT 
-                anio,
-                semana,
-                SUM(monto) AS total_semanal
-            FROM Pagos
-            GROUP BY anio, semana
-        )
-
-        SELECT 
-            anio,
-            semana,
-            total_semanal,
-            AVG(total_semanal) OVER () AS promedio_general,
-            SUM(total_semanal) OVER (ORDER BY anio, semana) AS acumulado_progresivo
-        FROM TotalSemanal
-        ORDER BY anio, semana;
-    ';
-
-    EXEC sp_executesql 
-        @sql,
-        N'@id_consorcio INT, @anio_desde INT, @anio_hasta INT',
-        @id_consorcio=@id_consorcio,
-        @anio_desde=@anio_desde,
-        @anio_hasta=@anio_hasta;
-END;
-GO
-
-----------------------------------------------------------------------------------------------------------
-/*
-    Reporte 2
-    Presente el total de recaudación por mes y departamento en formato de tabla cruzada. 
-*/
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
-    @min  DECIMAL(12,2) = NULL, 
-    @max  DECIMAL(12,2) = NULL,
-    @anio INT = NULL
-WITH EXECUTE AS owner
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @cols NVARCHAR(MAX);
-    DECLARE @sql NVARCHAR(MAX);
-    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
-    DECLARE @having NVARCHAR(MAX) = N'';
-
-    -- filtro por año
-    IF @anio IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) = @anio ';
-
-    -- filtros HAVING
-    IF @min IS NOT NULL AND @max IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) BETWEEN @min AND @max ';
-    ELSE IF @min IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) >= @min ';
-    ELSE IF @max IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) <= @max ';
-
-    -----------------------------------------------------------
-    -- SANEAR nombres de departamento para el XML + PIVOT
-    -----------------------------------------------------------
-    SELECT 
-        @cols = STRING_AGG(
-                    QUOTENAME(REPLACE(LTRIM(RTRIM(departamento)), ' ', '_')),
-                    ','
-                 )
-    FROM (
-        SELECT DISTINCT departamento
-        FROM ddbba.unidad_funcional
-    ) AS d;
-
-    -----------------------------------------------------------
-    -- SQL dinámico
-    -----------------------------------------------------------
-    SET @sql = N'
-        WITH mes_uf_CTE AS (
-            SELECT 
-                FORMAT(p.fecha_pago, ''yyyy-MM'') AS mes, 
-                REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'') AS departamento,
-                SUM(p.monto) AS total_monto
-            FROM ddbba.pago p
-            JOIN ddbba.unidad_funcional uf  
-                ON uf.id_unidad_funcional = p.id_unidad_funcional
-            ' + @where + N'
-            GROUP BY FORMAT(p.fecha_pago, ''yyyy-MM''), 
-                     REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'')
-            ' + @having + N'
-        )
-        SELECT mes, ' + @cols + N'
-        FROM mes_uf_CTE
-        PIVOT (
-            SUM(total_monto)
-            FOR departamento IN (' + @cols + N')
-        ) AS tabla_cruzada
-        ORDER BY mes
-        FOR XML PATH(''Mes''), ROOT(''Recaudacion''), ELEMENTS XSINIL;
-    ';
-
-    -----------------------------------------------------------
-    -- Ejecutar con parámetros
-    -----------------------------------------------------------
-    EXEC sp_executesql 
-        @sql,
-        N'@min DECIMAL(12,2), @max DECIMAL(12,2), @anio INT',
-        @min=@min, @max=@max, @anio=@anio;
-END;
-GO
-
---------------------------------------------------------------------------------------
-
- /*
-    Reporte 3
-    Presente un cuadro cruzado con la recaudación total desagregada según su procedencia
-    (ordinario, extraordinario, etc.) según el periodo.
-*/
---IMPORTANTE (ANTES DE EJECUTAR EL SP):
---Para ejecutar un llamado a una API desde SQL primero vamos a tener que habilitar ciertos permisos que por default vienen bloqueados
---'Ole Automation Procedures' permite a SQL Server utilizar el controlador OLE para interactuar con los objetos
-
-EXEC sp_configure 'show advanced options', 1;	--Para poder editar los permisos avanzados
-RECONFIGURE;
-GO
-EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avanzada de OLE
-RECONFIGURE;
-GO
-
-/*
-Reporte 3
-Presente un cuadro cruzado con la recaudacion total desagregada segun su procedencia (ordinario, extraordinario, etc.) segun el periodo
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_3
-    @FechaDesde DATE = NULL,
-    @FechaHasta DATE = NULL,
-    @IdConsorcio INT = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    --Estamos usando una API que devuelve el valor del dolar oficial, blue y el euro en tipo de cambio comprador y vendedor
-    --Referencia: https://api.bluelytics.com.ar/
-
-    -- ================================================
-    -- Obtener el valor del dolar oficial (value_buy)
-    -- ================================================
-
-    --Vamos a convertir el valor total recaudado y sus desgloses a USD oficial, tipo de cambio comprador
-    --Para eso, primero armamos el URL del llamado
-
-    DECLARE @url NVARCHAR(256) = 'https://api.bluelytics.com.ar/v2/latest';
-
-    DECLARE @Object INT;
-    DECLARE @json TABLE(DATA NVARCHAR(MAX));
-    DECLARE @datos NVARCHAR(MAX); --La usaremos para la posterior interpretacion del json
-    DECLARE @valor_dolar DECIMAL(10,2);
-    DECLARE @fecha_dolar DATETIME2; --Usamos datetime2 porque datetime esta limitada en el rango de anios
-
-    BEGIN TRY
-        EXEC sp_OACreate 'MSXML2.XMLHTTP', @Object OUT; -- Creamos una instancia de OLE que nos permite hacer los llamados
-        EXEC sp_OAMethod @Object, 'OPEN', NULL, 'GET', @url, 'FALSE'; -- Definimos algunas propiedades del objeto para hacer una llamada HTTP Get
-        EXEC sp_OAMethod @Object, 'SEND';
-
-        --Si el SP devuelve una tabla, lo podemos almacenar con INSERT
-
-        INSERT INTO @json EXEC sp_OAGetProperty @Object, 'ResponseText'; --Obtenemos el valor de la propiedad 'ResponseText' del objeto OLE despues de realizar la consulta
-        EXEC sp_OADestroy @Object;
-
-        --Interpretamos el JSON
-
-        SET @datos = (SELECT DATA FROM @json);
-
-        -- Extraemos el valor del dolar y la ultima fecha de actualizacion
-
-        SELECT 
-            @valor_dolar = JSON_VALUE(@datos, '$.oficial.value_buy'),
-            @fecha_dolar = JSON_VALUE(@datos, '$.last_update');
-    END TRY
-    BEGIN CATCH
-        PRINT 'Error al obtener el valor del dolar. Se usara 1 como valor por defecto.'; --Por si falla
-        SET @valor_dolar = 1;
-        SET @fecha_dolar = GETDATE();
-    END CATCH;
-
-    -- ============================================
-    -- Consulta principal de recaudacion
-    -- ============================================
-
-    WITH gastos_union AS (
-        SELECT
-
-        --Total de Gastos Ordinarios dentro del periodo
-
-            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
-            'Ordinario' AS Tipo,
-            gaor.importe AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gastos_ordinarios gaor 
-            ON e.id_expensa = gaor.id_expensa
-        WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
-
-        UNION ALL
-
-        SELECT
-
-        --Total de Gastos Extraordinarios dentro del periodo
-
-            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
-            'Extraordinario' AS Tipo,
-            ge.importe_total AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gasto_extraordinario ge 
-            ON e.id_expensa = ge.id_expensa
-        WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
-    )
-
-    --Consulta final con los valores desagregados a mostrar
-
-    SELECT 
-        Periodo,
-        ISNULL([Ordinario], 0) AS Total_Ordinario,
-        CAST(ROUND((ISNULL([Ordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Ordinario_USD, --Casteamos a DECIMAL y redondeamos a dos digitos
-        ISNULL([Extraordinario], 0) AS Total_Extraordinario,
-        CAST(ROUND((ISNULL(Extraordinario, 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Extraordinario_USD,
-        ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0) AS Total_Recaudado,
-        CAST(ROUND((ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Recaudado_USD
-    FROM gastos_union
-    PIVOT (
-        SUM(Importe)
-        FOR Tipo IN ([Ordinario], [Extraordinario])
-    ) AS pvt
-    ORDER BY Periodo;
-
-
-    -- ============================================
-    -- Extraer dolar oficial y fecha
-    -- ============================================
-
-    --Podemos mostrar el valor del dolar actual y la ultima fecha de actualizacion en una consulta separada
-    --para que quien ejecute el reporte este al tanto de que valor se utilizo al momento de ejecutarse el SP
-
-    SELECT 
-        CAST(JSON_VALUE(@datos, '$.oficial.value_buy') AS DECIMAL(10,2)) AS Dolar_Oficial_Compra,
-        CONVERT(VARCHAR(19), TRY_CAST(JSON_VALUE(@datos, '$.last_update') AS DATETIME2), 120) AS Fecha_Actualizacion
-
-END;
-
-GO
-
-------------------------------------------------------------------------------------------------------
-/*
-    Reporte 4
-    Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
- */
-
-/*Reporte 4 con XML
-Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos*/
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_4
-    @id_consorcio INT = NULL,  -- filtrar por consorcio
-    @AnioDesde INT = NULL,     -- año desde
-    @AnioHasta INT = NULL      --  año hasta
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @FechaDesde DATE = NULL;
-    DECLARE @FechaHasta DATE = NULL;
-
-    -- Rango de fechas
-    IF @AnioDesde IS NOT NULL
-        SET @FechaDesde = DATEFROMPARTS(@AnioDesde, 1, 1);
-    IF @AnioHasta IS NOT NULL
-        SET @FechaHasta = DATEFROMPARTS(@AnioHasta, 12, 31);
-
-
--- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
-
-    ;WITH GastosUnificados AS (
-        SELECT 
-            YEAR(e.fecha_emision) AS Anio,
-            MONTH(e.fecha_emision) AS Mes,
-            gor.importe AS Monto,
-            'Ordinario' AS TipoGasto,
-            e.id_consorcio
-        FROM ddbba.gastos_ordinarios gor
-        INNER JOIN ddbba.expensa e ON gor.id_expensa = e.id_expensa
-        WHERE 
-            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-
-        UNION ALL
-
-        SELECT 
-            YEAR(e.fecha_emision) AS Anio,
-            MONTH(e.fecha_emision) AS Mes,
-            ge.importe_total AS Monto,
-            'Extraordinario' AS TipoGasto,
-            e.id_consorcio
-        FROM ddbba.gasto_extraordinario ge
-        INNER JOIN ddbba.expensa e ON ge.id_expensa = e.id_expensa
-        WHERE 
-            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-    ),
-    GastosMensuales AS (
-        SELECT 
-            Anio,
-            Mes,
-            DATENAME(MONTH, DATEFROMPARTS(Anio, Mes, 1)) AS NombreMes,
-            SUM(Monto) AS TotalGastos,
-            SUM(CASE WHEN TipoGasto = 'Ordinario' THEN Monto ELSE 0 END) AS GastosOrdinarios,
-            SUM(CASE WHEN TipoGasto = 'Extraordinario' THEN Monto ELSE 0 END) AS GastosExtraordinarios,
-            COUNT(*) AS CantidadGastos,
-            COUNT(CASE WHEN TipoGasto = 'Ordinario' THEN 1 END) AS CantOrdinarios,
-            COUNT(CASE WHEN TipoGasto = 'Extraordinario' THEN 1 END) AS CantExtraordinarios
-        FROM GastosUnificados
-        GROUP BY Anio, Mes
-    )
-    SELECT TOP 5
-        Anio AS [@Anio],
-        Mes AS [@Mes],
-        NombreMes AS [@NombreMes],
-        TotalGastos AS [@TotalGastos],
-        GastosOrdinarios AS [@GastosOrdinarios],
-        GastosExtraordinarios AS [@GastosExtraordinarios],
-        CantidadGastos AS [@CantidadGastos],
-        CantOrdinarios AS [@CantOrdinarios],
-        CantExtraordinarios AS [@CantExtraordinarios],
-        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
-    FROM GastosMensuales
-    ORDER BY TotalGastos DESC
-    FOR XML PATH('Mes'), ROOT('Top5MesesGastos'), TYPE;
-
-
---  TOP 5 MESES CON MAYORES INGRESOS
-
-    ;WITH IngresosMensuales AS (
-        SELECT 
-            YEAR(p.fecha_pago) AS Anio,
-            MONTH(p.fecha_pago) AS Mes,
-            DATENAME(MONTH, p.fecha_pago) AS NombreMes,
-            SUM(p.monto) AS TotalIngresos,
-            COUNT(*) AS CantidadPagos,
-            COUNT(DISTINCT p.id_unidad_funcional) AS UnidadesPagaron
-        FROM ddbba.pago p
-        WHERE 
-            p.estado = 'Aprobado'
-            AND (@id_consorcio IS NULL OR p.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR p.fecha_pago >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR p.fecha_pago <= @FechaHasta)
-        GROUP BY 
-            YEAR(p.fecha_pago),
-            MONTH(p.fecha_pago),
-            DATENAME(MONTH, p.fecha_pago)
-    )
-    ---genera el XML
-    SELECT TOP 5
-        Anio AS [@Anio],
-        Mes AS [@Mes],
-        NombreMes AS [@NombreMes],
-        TotalIngresos AS [@TotalIngresos],
-        CantidadPagos AS [@CantidadPagos],
-        UnidadesPagaron AS [@UnidadesPagaron],
-        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
-    FROM IngresosMensuales
-    ORDER BY TotalIngresos DESC
-    FOR XML PATH('Mes'), ROOT('Top5MesesIngresos'), TYPE;
-
-END;
-GO
-
-
---------------------------------------------------------------------------------------------
-/*
-    Obtenga los 3 (tres) propietarios con mayor morosidad. Presente información de contacto y
-    DNI de los propietarios para que la administración los pueda contactar o remitir el trámite al
-    estudio jurídico.
-*/
--- 3 (tres) propietarios con mayor morosidad (morosidad = deuda total que tiene un propietario (persona) por las unidades funcionales que posee).
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
-    @id_consorcio INT = NULL,
-    @fecha_desde DATE = NULL,
-    @fecha_hasta DATE = NULL,
-    @limite INT = 3
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT TOP (@limite)
-        p.nro_documento,
-        p.tipo_documento,
-        p.nombre,
-        p.mail,
-        p.telefono,
-        SUM(ISNULL(depuf.deuda, 0)) AS total_deuda
-    FROM ddbba.persona p
-    INNER JOIN ddbba.rol r
-        ON p.nro_documento = r.nro_documento
-        AND p.tipo_documento = r.tipo_documento
-        AND r.nombre_rol = 'Propietario'
-    INNER JOIN ddbba.unidad_funcional uf
-        ON r.id_unidad_funcional = uf.id_unidad_funcional
-        AND r.id_consorcio = uf.id_consorcio
-    INNER JOIN ddbba.detalle_expensas_por_uf depuf
-        ON uf.id_unidad_funcional = depuf.id_unidad_funcional
-        AND uf.id_consorcio = depuf.id_consorcio
-    INNER JOIN ddbba.expensa e
-        ON depuf.id_expensa = e.id_expensa
-    WHERE (@id_consorcio IS NULL OR uf.id_consorcio = @id_consorcio)
-      AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
-      AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
-    GROUP BY
-        p.nro_documento,
-        p.tipo_documento,
-        p.nombre,
-        p.mail,
-        p.telefono
-    HAVING SUM(ISNULL(depuf.deuda, 0)) > 0
-    ORDER BY total_deuda DESC;
-END;
-GO
-
--------------------------------------------------------------------------------------------------
-/*
-    --  Reporte 6
-    Muestre las fechas de pagos de expensas ordinarias de cada UF y la cantidad de días que
-    pasan entre un pago y el siguiente, para el conjunto examinado.
-
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_6
-    @id_unidad_funcional INT = NULL,
-    @fecha_desde DATE = NULL,
-    @fecha_hasta DATE = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    ;WITH PagosUnicos AS (
-        SELECT DISTINCT
-            p.id_unidad_funcional,
-            p.id_expensa,
-            CAST(p.fecha_pago AS DATE) AS fecha_pago
-        FROM ddbba.pago p
-        INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
-        INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
-        INNER JOIN ddbba.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
-        WHERE
-            (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
-            AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
-            AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
-    ),
-    PagosConLag AS (
-        SELECT
-            *,
-            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior
-        FROM PagosUnicos
-    )
-    SELECT
-        id_unidad_funcional,
-        id_expensa,
-        fecha_pago,
-        Fecha_Pago_Anterior,
-        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos
-    FROM PagosConLag
-    ORDER BY id_unidad_funcional, fecha_pago;
-END
-GO
-
-
-------------------------------------------------------------------------------------------------------------
---CREACION DE INDICES
---------------------------------------------------------------------------------------------------------
--- ======================================
--- ÍNDICES PARA OPTIMIZAR sp_reporte_1
--- ======================================
-
--- 1 Pago: filtro por año y join con expensa
-CREATE INDEX IX_pago_fecha_expensa
-ON ddbba.pago (fecha_pago, id_expensa)
-INCLUDE (monto);
-
--- 2 Expensa: join con pago y filtro por consorcio
-CREATE INDEX IX_expensa_consorcio
-ON ddbba.expensa (id_expensa, id_consorcio);
-
--- 3 Gastos ordinarios: join por expensa
-CREATE INDEX IX_gastos_ordinarios_expensa
-ON ddbba.gastos_ordinarios (id_expensa, id_gasto_ordinario);
-
--- 4 Gasto extraordinario: join por expensa
-CREATE INDEX IX_gasto_extraordinario_expensa
-ON ddbba.gasto_extraordinario (id_expensa, id_gasto_extraordinario);
-
-
--- ==================================================
--- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_2
--- ==================================================
-
--- 1 Índice principal sobre pago:
---    mejora los filtros por fecha y joins por unidad funcional.
-CREATE INDEX IX_pago_fecha_unidad_monto
-ON ddbba.pago (fecha_pago, id_unidad_funcional)
-INCLUDE (monto);
-
--- 2 Índice sobre unidad_funcional:
---    mejora el join y la búsqueda de departamentos únicos.
-CREATE INDEX IX_unidad_funcional_departamento
-ON ddbba.unidad_funcional (id_unidad_funcional, departamento);
-
-
--- ==================================================
--- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_3
--- ==================================================
-
--- Índice para mejorar filtros y joins en expensa
-CREATE INDEX IX_expensa_consorcio_fecha 
-ON ddbba.expensa (id_consorcio, fecha_emision, id_expensa);
-
--- Índices para acelerar los joins y SUM en gastos
-CREATE INDEX IX_gastos_ordinarios_expensa 
-ON ddbba.gastos_ordinarios (id_expensa, importe);
-
-CREATE INDEX IX_gasto_extraordinario_expensa 
-ON ddbba.gasto_extraordinario (id_expensa, importe_total);
-
--- =====================================================
--- ÍNDICES PARA ddbba.sp_reporte_4
--- =====================================================
-
--- 1 Índice sobre EXPENSA:
--- Mejora las uniones por id_expensa y los filtros por fecha_emision e id_consorcio.
-CREATE INDEX IX_expensa_consorcio_fecha
-ON ddbba.expensa (id_consorcio, fecha_emision, id_expensa);
-
--- 2 Índice sobre GASTOS_ORDINARIOS:
--- Optimiza el JOIN con expensa e inclusión del campo importe (usado en SUM).
-CREATE INDEX IX_gastos_ordinarios_expensa
-ON ddbba.gastos_ordinarios (id_expensa)
-INCLUDE (importe);
-
--- 3 Índice sobre GASTO_EXTRAORDINARIO:
--- Igual que el anterior, para el JOIN y la agregación de importe_total.
-CREATE INDEX IX_gasto_extraordinario_expensa
-ON ddbba.gasto_extraordinario (id_expensa)
-INCLUDE (importe_total);
-
--- 4 Índice sobre PAGO:
--- Mejora el filtro por consorcio, fecha y estado (Aprobado),
--- además de las funciones YEAR() y MONTH() usadas en los agrupamientos.
-CREATE INDEX IX_pago_consorcio_fecha_estado
-ON ddbba.pago (id_consorcio, fecha_pago, estado)
-INCLUDE (monto, id_unidad_funcional);
-
--- =====================================================
--- ÍNDICES RECOMENDADOS PARA ddbba.sp_reporte_5
--- =====================================================
--- Mejora los JOINS con unidad funcional y expensa, también optimiza la función SUM()
-CREATE INDEX IX_detalle_expensas_por_uf_unidad_consorcio_expensa
-ON ddbba.detalle_expensas_por_uf (id_unidad_funcional, id_consorcio, id_expensa)
-INCLUDE (deuda);
---Optimiza JOIN id_expensa y busqueda por rango de fechas
-CREATE INDEX IX_expensa_fecha_emision
-ON ddbba.expensa (fecha_emision)
-INCLUDE (id_expensa);
---Optimiza filtros where y JOINs de persona y unidad funcional
-CREATE INDEX IX_rol_propietario
-ON ddbba.rol (nombre_rol, nro_documento, tipo_documento, id_unidad_funcional, id_consorcio);
---Optimiza JOINs con rol y id expensa por unidad funcional
-CREATE INDEX IX_unidad_funcional_consorcio
-ON ddbba.unidad_funcional (id_unidad_funcional, id_consorcio);
--- Optimiza JOIN con rol
-CREATE INDEX IX_persona_documento
-ON ddbba.persona (nro_documento, tipo_documento);
-
--- ==================================================
--- ÍNDICES PARA OPTIMIZAR ddbba.sp_reporte_6
--- ==================================================
-
--- Índice para optimizar el filtrado y orden de los pagos por UF, ID expensa y fecha
-CREATE INDEX IX_pago_consorcio_uf_fecha
-ON ddbba.pago (id_unidad_funcional, id_expensa, fecha_pago);
-GO 
-
-/*
-ENUNCIADO:CREACION DE SP NECESARIOS PARA LA GENERACION DE REPORTES PEDIDOS
-COMISION:02-5600 
-CURSO:3641
-NUMERO DE GRUPO : 01
-MATERIA: BASE DE DATOS APLICADA
-INTEGRANTES:
-Bonachera Ornella � 46119546 
-Benitez Jimena � 46097948 
-Arc�n Wogelman, Nazareno-44792096
-Perez, Olivia Constanza � 46641730
-Guardia Gabriel � 42364065 
-Arriola Santiago � 41743980 
-*/
-
-use Com5600_Grupo01;
-go
-
-/*
-    Reporte 1
-    Flujo de caja semanal:
-    - Total recaudado por semana
-    - Promedio en el periodo
-    - Acumulado progresivo
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_1
-    @id_consorcio INT = NULL, 
-    @anio_desde INT = NULL,   
-    @anio_hasta INT = NULL
-WITH EXECUTE AS owner
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @sql NVARCHAR(MAX);
-    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
-
-    -- Filtros din�micos
-    IF @id_consorcio IS NOT NULL
-        SET @where += N' AND e.id_consorcio = @id_consorcio ';
-
-    IF @anio_desde IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) >= @anio_desde ';
-
-    IF @anio_hasta IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) <= @anio_hasta ';
-
-
-    SET @sql = N'
-        WITH Pagos AS (
-            SELECT
-                p.id_pago,
-                p.monto,
-                p.fecha_pago,
-                YEAR(p.fecha_pago) AS anio,
-                DATEPART(WEEK, p.fecha_pago) AS semana
-            FROM ddbba.pago p
-            LEFT JOIN ddbba.expensa e ON e.id_expensa = p.id_expensa
-            ' + @where + N'
-        ),
-
-        TotalSemanal AS (
-            SELECT 
-                anio,
-                semana,
-                SUM(monto) AS total_semanal
-            FROM Pagos
-            GROUP BY anio, semana
-        )
-
-        SELECT 
-            anio,
-            semana,
-            total_semanal,
-            AVG(total_semanal) OVER () AS promedio_general,
-            SUM(total_semanal) OVER (ORDER BY anio, semana) AS acumulado_progresivo
-        FROM TotalSemanal
-        ORDER BY anio, semana;
-    ';
-
-    EXEC sp_executesql 
-        @sql,
-        N'@id_consorcio INT, @anio_desde INT, @anio_hasta INT',
-        @id_consorcio=@id_consorcio,
-        @anio_desde=@anio_desde,
-        @anio_hasta=@anio_hasta;
-END;
-GO
-
-----------------------------------------------------------------------------------------------------------
-/*
-    Reporte 2
-    Presente el total de recaudaci�n por mes y departamento en formato de tabla cruzada. 
-*/
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
-    @min  DECIMAL(12,2) = NULL, 
-    @max  DECIMAL(12,2) = NULL,
-    @anio INT = NULL
-WITH EXECUTE AS owner
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @cols NVARCHAR(MAX);
-    DECLARE @sql NVARCHAR(MAX);
-    DECLARE @where NVARCHAR(MAX) = N' WHERE 1=1 ';
-    DECLARE @having NVARCHAR(MAX) = N'';
-
-    -- filtro por a�o
-    IF @anio IS NOT NULL
-        SET @where += N' AND YEAR(p.fecha_pago) = @anio ';
-
-    -- filtros HAVING
-    IF @min IS NOT NULL AND @max IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) BETWEEN @min AND @max ';
-    ELSE IF @min IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) >= @min ';
-    ELSE IF @max IS NOT NULL
-        SET @having = N' HAVING SUM(p.monto) <= @max ';
-
-    -----------------------------------------------------------
-    -- SANEAR nombres de departamento para el XML + PIVOT
-    -----------------------------------------------------------
-    SELECT 
-        @cols = STRING_AGG(
-                    QUOTENAME(REPLACE(LTRIM(RTRIM(departamento)), ' ', '_')),
-                    ','
-                 )
-    FROM (
-        SELECT DISTINCT departamento
-        FROM ddbba.unidad_funcional
-    ) AS d;
-
-    -----------------------------------------------------------
-    -- SQL din�mico
-    -----------------------------------------------------------
-    SET @sql = N'
-        WITH mes_uf_CTE AS (
-            SELECT 
-                FORMAT(p.fecha_pago, ''yyyy-MM'') AS mes, 
-                REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'') AS departamento,
-                SUM(p.monto) AS total_monto
-            FROM ddbba.pago p
-            JOIN ddbba.unidad_funcional uf  
-                ON uf.id_unidad_funcional = p.id_unidad_funcional
-            ' + @where + N'
-            GROUP BY FORMAT(p.fecha_pago, ''yyyy-MM''), 
-                     REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'')
-            ' + @having + N'
-        )
-        SELECT mes, ' + @cols + N'
-        FROM mes_uf_CTE
-        PIVOT (
-            SUM(total_monto)
-            FOR departamento IN (' + @cols + N')
-        ) AS tabla_cruzada
-        ORDER BY mes
-        FOR XML PATH(''Mes''), ROOT(''Recaudacion''), ELEMENTS XSINIL;
-    ';
-
-    -----------------------------------------------------------
-    -- Ejecutar con par�metros
-    -----------------------------------------------------------
-    EXEC sp_executesql 
-        @sql,
-        N'@min DECIMAL(12,2), @max DECIMAL(12,2), @anio INT',
-        @min=@min, @max=@max, @anio=@anio;
-END;
-GO
-
---------------------------------------------------------------------------------------
-
- /*
-    Reporte 3
-    Presente un cuadro cruzado con la recaudaci�n total desagregada seg�n su procedencia
-    (ordinario, extraordinario, etc.) seg�n el periodo.
-*/
---IMPORTANTE (ANTES DE EJECUTAR EL SP):
---Para ejecutar un llamado a una API desde SQL primero vamos a tener que habilitar ciertos permisos que por default vienen bloqueados
---'Ole Automation Procedures' permite a SQL Server utilizar el controlador OLE para interactuar con los objetos
-
-EXEC sp_configure 'show advanced options', 1;	--Para poder editar los permisos avanzados
-RECONFIGURE;
-GO
-EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avanzada de OLE
-RECONFIGURE;
-GO
-
-/*
-Reporte 3
-Presente un cuadro cruzado con la recaudacion total desagregada segun su procedencia (ordinario, extraordinario, etc.) segun el periodo
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_3
-    @FechaDesde DATE = NULL,
-    @FechaHasta DATE = NULL,
-    @IdConsorcio INT = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    --Estamos usando una API que devuelve el valor del dolar oficial, blue y el euro en tipo de cambio comprador y vendedor
-    --Referencia: https://api.bluelytics.com.ar/
-
-    -- ================================================
-    -- Obtener el valor del dolar oficial (value_buy)
-    -- ================================================
-
-    --Vamos a convertir el valor total recaudado y sus desgloses a USD oficial, tipo de cambio comprador
-    --Para eso, primero armamos el URL del llamado
-
-    DECLARE @url NVARCHAR(256) = 'https://api.bluelytics.com.ar/v2/latest';
-
-    DECLARE @Object INT;
-    DECLARE @json TABLE(DATA NVARCHAR(MAX));
-    DECLARE @datos NVARCHAR(MAX); --La usaremos para la posterior interpretacion del json
-    DECLARE @valor_dolar DECIMAL(10,2);
-    DECLARE @fecha_dolar DATETIME2; --Usamos datetime2 porque datetime esta limitada en el rango de anios
-
-    BEGIN TRY
-        EXEC sp_OACreate 'MSXML2.XMLHTTP', @Object OUT; -- Creamos una instancia de OLE que nos permite hacer los llamados
-        EXEC sp_OAMethod @Object, 'OPEN', NULL, 'GET', @url, 'FALSE'; -- Definimos algunas propiedades del objeto para hacer una llamada HTTP Get
-        EXEC sp_OAMethod @Object, 'SEND';
-
-        --Si el SP devuelve una tabla, lo podemos almacenar con INSERT
-
-        INSERT INTO @json EXEC sp_OAGetProperty @Object, 'ResponseText'; --Obtenemos el valor de la propiedad 'ResponseText' del objeto OLE despues de realizar la consulta
-        EXEC sp_OADestroy @Object;
-
-        --Interpretamos el JSON
-
-        SET @datos = (SELECT DATA FROM @json);
-
-        -- Extraemos el valor del dolar y la ultima fecha de actualizacion
-
-        SELECT 
-            @valor_dolar = JSON_VALUE(@datos, '$.oficial.value_buy'),
-            @fecha_dolar = JSON_VALUE(@datos, '$.last_update');
-    END TRY
-    BEGIN CATCH
-        PRINT 'Error al obtener el valor del dolar. Se usara 1 como valor por defecto.'; --Por si falla
-        SET @valor_dolar = 1;
-        SET @fecha_dolar = GETDATE();
-    END CATCH;
-
-    -- ============================================
-    -- Consulta principal de recaudacion
-    -- ============================================
-
-    WITH gastos_union AS (
-        SELECT
-
-        --Total de Gastos Ordinarios dentro del periodo
-
-            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
-            'Ordinario' AS Tipo,
-            gaor.importe AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gastos_ordinarios gaor 
-            ON e.id_expensa = gaor.id_expensa
-        WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
-
-        UNION ALL
-
-        SELECT
-
-        --Total de Gastos Extraordinarios dentro del periodo
-
-            FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
-            'Extraordinario' AS Tipo,
-            ge.importe_total AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gasto_extraordinario ge 
-            ON e.id_expensa = ge.id_expensa
-        WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
-    )
-
-    --Consulta final con los valores desagregados a mostrar
-
-    SELECT 
-        Periodo,
-        ISNULL([Ordinario], 0) AS Total_Ordinario,
-        CAST(ROUND((ISNULL([Ordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Ordinario_USD, --Casteamos a DECIMAL y redondeamos a dos digitos
-        ISNULL([Extraordinario], 0) AS Total_Extraordinario,
-        CAST(ROUND((ISNULL(Extraordinario, 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Extraordinario_USD,
-        ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0) AS Total_Recaudado,
-        CAST(ROUND((ISNULL([Ordinario], 0) + ISNULL([Extraordinario], 0)) / @valor_dolar, 2) AS DECIMAL(10,2)) AS Total_Recaudado_USD
-    FROM gastos_union
-    PIVOT (
-        SUM(Importe)
-        FOR Tipo IN ([Ordinario], [Extraordinario])
-    ) AS pvt
-    ORDER BY Periodo;
-
-
-    -- ============================================
-    -- Extraer dolar oficial y fecha
-    -- ============================================
-
-    --Podemos mostrar el valor del dolar actual y la ultima fecha de actualizacion en una consulta separada
-    --para que quien ejecute el reporte este al tanto de que valor se utilizo al momento de ejecutarse el SP
-
-    SELECT 
-        CAST(JSON_VALUE(@datos, '$.oficial.value_buy') AS DECIMAL(10,2)) AS Dolar_Oficial_Compra,
-        CONVERT(VARCHAR(19), TRY_CAST(JSON_VALUE(@datos, '$.last_update') AS DATETIME2), 120) AS Fecha_Actualizacion
-
-END;
-
-GO
-
-------------------------------------------------------------------------------------------------------
-/*
-    Reporte 4
-    Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
- */
-
-/*Reporte 4 con XML
-Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos*/
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_4
-    @id_consorcio INT = NULL,  -- filtrar por consorcio
-    @AnioDesde INT = NULL,     -- a�o desde
-    @AnioHasta INT = NULL      --  a�o hasta
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @FechaDesde DATE = NULL;
-    DECLARE @FechaHasta DATE = NULL;
-
-    -- Rango de fechas
-    IF @AnioDesde IS NOT NULL
-        SET @FechaDesde = DATEFROMPARTS(@AnioDesde, 1, 1);
-    IF @AnioHasta IS NOT NULL
-        SET @FechaHasta = DATEFROMPARTS(@AnioHasta, 12, 31);
-
-
--- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
-
-    ;WITH GastosUnificados AS (
-        SELECT 
-            YEAR(e.fecha_emision) AS Anio,
-            MONTH(e.fecha_emision) AS Mes,
-            gor.importe AS Monto,
-            'Ordinario' AS TipoGasto,
-            e.id_consorcio
-        FROM ddbba.gastos_ordinarios gor
-        INNER JOIN ddbba.expensa e ON gor.id_expensa = e.id_expensa
-        WHERE 
-            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-
-        UNION ALL
-
-        SELECT 
-            YEAR(e.fecha_emision) AS Anio,
-            MONTH(e.fecha_emision) AS Mes,
-            ge.importe_total AS Monto,
-            'Extraordinario' AS TipoGasto,
-            e.id_consorcio
-        FROM ddbba.gasto_extraordinario ge
-        INNER JOIN ddbba.expensa e ON ge.id_expensa = e.id_expensa
-        WHERE 
-            (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-    ),
-    GastosMensuales AS (
-        SELECT 
-            Anio,
-            Mes,
-            DATENAME(MONTH, DATEFROMPARTS(Anio, Mes, 1)) AS NombreMes,
-            SUM(Monto) AS TotalGastos,
-            SUM(CASE WHEN TipoGasto = 'Ordinario' THEN Monto ELSE 0 END) AS GastosOrdinarios,
-            SUM(CASE WHEN TipoGasto = 'Extraordinario' THEN Monto ELSE 0 END) AS GastosExtraordinarios,
-            COUNT(*) AS CantidadGastos,
-            COUNT(CASE WHEN TipoGasto = 'Ordinario' THEN 1 END) AS CantOrdinarios,
-            COUNT(CASE WHEN TipoGasto = 'Extraordinario' THEN 1 END) AS CantExtraordinarios
-        FROM GastosUnificados
-        GROUP BY Anio, Mes
-    )
-    SELECT TOP 5
-        Anio AS [@Anio],
-        Mes AS [@Mes],
-        NombreMes AS [@NombreMes],
-        TotalGastos AS [@TotalGastos],
-        GastosOrdinarios AS [@GastosOrdinarios],
-        GastosExtraordinarios AS [@GastosExtraordinarios],
-        CantidadGastos AS [@CantidadGastos],
-        CantOrdinarios AS [@CantOrdinarios],
-        CantExtraordinarios AS [@CantExtraordinarios],
-        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
-    FROM GastosMensuales
-    ORDER BY TotalGastos DESC
-    FOR XML PATH('Mes'), ROOT('Top5MesesGastos'), TYPE;
-
-
---  TOP 5 MESES CON MAYORES INGRESOS
-
-    ;WITH IngresosMensuales AS (
-        SELECT 
-            YEAR(p.fecha_pago) AS Anio,
-            MONTH(p.fecha_pago) AS Mes,
-            DATENAME(MONTH, p.fecha_pago) AS NombreMes,
-            SUM(p.monto) AS TotalIngresos,
-            COUNT(*) AS CantidadPagos,
-            COUNT(DISTINCT p.id_unidad_funcional) AS UnidadesPagaron
-        FROM ddbba.pago p
-        WHERE 
-            p.estado = 'Aprobado'
-            AND (@id_consorcio IS NULL OR p.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR p.fecha_pago >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR p.fecha_pago <= @FechaHasta)
-        GROUP BY 
-            YEAR(p.fecha_pago),
-            MONTH(p.fecha_pago),
-            DATENAME(MONTH, p.fecha_pago)
-    )
-    ---genera el XML
-    SELECT TOP 5
-        Anio AS [@Anio],
-        Mes AS [@Mes],
-        NombreMes AS [@NombreMes],
-        TotalIngresos AS [@TotalIngresos],
-        CantidadPagos AS [@CantidadPagos],
-        UnidadesPagaron AS [@UnidadesPagaron],
-        CAST(Anio AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(Mes AS VARCHAR(2)), 2) AS [@PeriodoOrdenado]
-    FROM IngresosMensuales
-    ORDER BY TotalIngresos DESC
-    FOR XML PATH('Mes'), ROOT('Top5MesesIngresos'), TYPE;
-
-END;
-GO
-
-
---------------------------------------------------------------------------------------------
-/*
-    Obtenga los 3 (tres) propietarios con mayor morosidad. Presente informaci�n de contacto y
-    DNI de los propietarios para que la administraci�n los pueda contactar o remitir el tr�mite al
-    estudio jur�dico.
-*/
--- 3 (tres) propietarios con mayor morosidad (morosidad = deuda total que tiene un propietario (persona) por las unidades funcionales que posee).
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
-    @id_consorcio INT = NULL,
-    @fecha_desde DATE = NULL,
-    @fecha_hasta DATE = NULL,
-    @limite INT = 3
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT TOP (@limite)
-        p.nro_documento,
-        p.tipo_documento,
-        p.nombre,
-        p.mail,
-        p.telefono,
-        SUM(ISNULL(depuf.deuda, 0)) AS total_deuda
-    FROM ddbba.persona p
-    INNER JOIN ddbba.rol r
-        ON p.nro_documento = r.nro_documento
-        AND p.tipo_documento = r.tipo_documento
-        AND r.nombre_rol = 'Propietario'
-    INNER JOIN ddbba.unidad_funcional uf
-        ON r.id_unidad_funcional = uf.id_unidad_funcional
-        AND r.id_consorcio = uf.id_consorcio
-    INNER JOIN ddbba.detalle_expensas_por_uf depuf
-        ON uf.id_unidad_funcional = depuf.id_unidad_funcional
-        AND uf.id_consorcio = depuf.id_consorcio
-    INNER JOIN ddbba.expensa e
-        ON depuf.id_expensa = e.id_expensa
-    WHERE (@id_consorcio IS NULL OR uf.id_consorcio = @id_consorcio)
-      AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
-      AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
-    GROUP BY
-        p.nro_documento,
-        p.tipo_documento,
-        p.nombre,
-        p.mail,
-        p.telefono
-    HAVING SUM(ISNULL(depuf.deuda, 0)) > 0
-    ORDER BY total_deuda DESC;
-END;
-GO
-
--------------------------------------------------------------------------------------------------
-/*
-    --  Reporte 6
-    Muestre las fechas de pagos de expensas ordinarias de cada UF y la cantidad de d�as que
-    pasan entre un pago y el siguiente, para el conjunto examinado.
-
-*/
-
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_6
-    @id_unidad_funcional INT = NULL,
-    @fecha_desde DATE = NULL,
-    @fecha_hasta DATE = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    ;WITH PagosUnicos AS (
-        SELECT DISTINCT
-            p.id_unidad_funcional,
-            p.id_expensa,
-            CAST(p.fecha_pago AS DATE) AS fecha_pago
-        FROM ddbba.pago p
-        INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
-        INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
-        INNER JOIN ddbba.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
-        WHERE
-            (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
-            AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
-            AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
-    ),
-    PagosConLag AS (
-        SELECT
-            *,
-            LAG(fecha_pago) OVER (PARTITION BY id_unidad_funcional ORDER BY fecha_pago) AS Fecha_Pago_Anterior
-        FROM PagosUnicos
-    )
-    SELECT
-        id_unidad_funcional,
-        id_expensa,
-        fecha_pago,
-        Fecha_Pago_Anterior,
-        DATEDIFF(DAY, Fecha_Pago_Anterior, fecha_pago) AS Dias_Entre_Pagos
-    FROM PagosConLag
-    ORDER BY id_unidad_funcional, fecha_pago;
-END
-GO
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FINALIZA CREACION DE PROCEDIMIENTOS PARA GENERAR DATOS ADICIONALES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
