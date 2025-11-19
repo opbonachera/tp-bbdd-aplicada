@@ -28,7 +28,7 @@ BEGIN
 END;
 --para ejecutar el sp
 EXEC ddbba.sp_alter_table
-
+GO;
 
 --esto es para cifrar el cbu da la tablas
 CREATE OR ALTER PROCEDURE ddbba.sp_cifrado_tablas
@@ -99,7 +99,7 @@ SELECT *
 FROM ddbba.unidad_funcional
 SELECT *
 FROM ddbba.pago
-
+GO;
 --Creo las vistas para vr las tablas decifradas
 
 --tabla personas
@@ -115,7 +115,7 @@ SELECT
 FROM ddbba.persona;
 
 --select * from ddbba.vw_persona_
-
+GO;
 --tabla de pagos
 CREATE OR ALTER VIEW ddbba.vw_pago
 AS
@@ -131,7 +131,7 @@ SELECT
 FROM ddbba.pago;
 
 --select * from ddbba.vw_pago
-
+GO;
 -- tabla de unidad funcional
 CREATE OR ALTER VIEW ddbba.vw_uf
 AS
@@ -152,7 +152,7 @@ FROM ddbba.unidad_funcional;
 --select * from ddbba.vw_uf
 
 -- triggers para cada vez que se inserte o se cambie alguno de los datos sencibles se vuelva a cifrar
-
+GO;
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_persona
 ON ddbba.persona
 AFTER INSERT, UPDATE
@@ -186,7 +186,7 @@ select * from ddbba.persona*/
 
 
 
-
+GO;
 -- Pago
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_pago
 ON ddbba.pago
@@ -211,7 +211,7 @@ END;
 VALUES ( 102,1,1, 1, GETDATE(), 55000, '0170123400000000000002', 'Aprobado');
  select * from ddbba.pago*/
 
-
+ GO;
 -- Unidad Funcional
 CREATE OR ALTER TRIGGER ddbba.trg_cifrar_uf
 ON ddbba.unidad_funcional

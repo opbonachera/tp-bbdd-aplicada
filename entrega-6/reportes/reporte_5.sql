@@ -4,6 +4,9 @@
 =======
 
 >>>>>>> 0eff548b4889cc629d0a75282308da28214e7a31
+END;
+GO;
+
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
     @id_consorcio INT = NULL,
     @fecha_desde DATE = NULL,

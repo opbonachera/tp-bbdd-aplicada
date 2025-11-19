@@ -1,4 +1,6 @@
 <<<<<<< HEAD:entrega-6/reportes/reportes.sql
+
+
 create or alter procedure sp_reporte_1
 as
 begin
@@ -24,8 +26,9 @@ begin
         SUM(total_ordinarios + total_extraordinarios) OVER (ORDER BY semana) AS acumulado_progresivo
     FROM RecaudacionSemanal
     ORDER BY semana;
-end
-GO;
+end;
+GO
+
 
 CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
 AS
