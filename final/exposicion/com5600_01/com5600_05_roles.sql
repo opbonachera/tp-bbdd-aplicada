@@ -1,5 +1,19 @@
+/*---------------------------------------------------------
+ Materia:     Base de datos aplicada. 
+ Grupo:       1
+ Comision:    5600
+ Fecha:       2025-01-01
+ Descripcion: Creacion de logins, usuarios y roles. 
+ Integrantes: Arcón Wogelman, Nazareno — 44792096
+              Arriola Santiago — 41743980 
+              Bonachera Ornella — 46119546
+              Benitez Jimena — 46097948
+              Guardia Gabriel — 42364065
+              Perez, Olivia Constanza — 46641730
+----------------------------------------------------------*/
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  INICIO DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 -- =========================================================== --
--- Crea logins, usuarios, roles, permisos y vistas de auditorï¿½a --
+-- Crea logins, usuarios, roles, permisos y vistas de auditor?a --
 -- =========================================================== --
 
 CREATE LOGIN usuario1 WITH PASSWORD = 'Password123!';
@@ -9,7 +23,7 @@ CREATE LOGIN usuario4 WITH PASSWORD = 'Password123!';
 GO
 
 ---------------------------------------------------------------
--- CREACIï¿½N DE USUARIOS EN LA BASE DE DATOS
+-- CREACI?N DE USUARIOS EN LA BASE DE DATOS
 ---------------------------------------------------------------
 USE [consorcios];
 GO
@@ -25,7 +39,7 @@ GO
 
 
 ---------------------------------------------------------------
--- CREACIï¿½N DE ROLES
+-- CREACI?N DE ROLES
 ---------------------------------------------------------------
 CREATE ROLE rol_administrativo_general;
 GO
@@ -38,20 +52,20 @@ GO
 
 
 ---------------------------------------------------------------
--- ASIGNACIï¿½N DE USUARIOS A ROLES
+-- ASIGNACI?N DE USUARIOS A ROLES
 ---------------------------------------------------------------
 ALTER ROLE rol_administrativo_general ADD MEMBER usuario1;
 ALTER ROLE rol_administrativo_operativo ADD MEMBER usuario2;
 ALTER ROLE rol_administrativo_bancario ADD MEMBER usuario3;
 ALTER ROLE rol_sistemas ADD MEMBER usuario4;
 
--- Un usuario en mï¿½s de un rol
+-- Un usuario en m?s de un rol
 ALTER ROLE rol_administrativo_general ADD MEMBER usuario3;
 GO
 
 
 ---------------------------------------------------------------
--- ASIGNACIï¿½N DE PERMISOS A ROLES
+-- ASIGNACI?N DE PERMISOS A ROLES
 ---------------------------------------------------------------
 
 -- Permisos sobre tabla unidad_funcional
@@ -86,36 +100,4 @@ TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_o
 
 GRANT EXECUTE ON OBJECT::ddbba.sp_reporte_6 
 TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
-GO
-
----------------------------------------------------------------
---ASIGNACION DE PERMISOS FALTANTES PARA SQL DINAMICO
----------------------------------------------------------------
--- Los reportes (sp_reporte_1, sp_reporte_2) usan SQL dinï¿½mico.
--- Esto rompe la cadena de propiedad, por lo que los roles
--- necesitan permiso SELECT directo sobre las tablas consultadas.
-
--- Permiso sobre ddbba.pago (usada en sp_reporte_1 y sp_reporte_2)
-GRANT SELECT ON ddbba.pago
-TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
-GO
-
--- Permiso sobre ddbba.expensa (usada en sp_reporte_1)
-GRANT SELECT ON ddbba.expensa
-TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
-GO
-
--- Permiso sobre ddbba.gastos_ordinarios (usada en sp_reporte_1)
-GRANT SELECT ON ddbba.gastos_ordinarios
-TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
-GO
-
--- Permiso sobre ddbba.gasto_extraordinario (usada en sp_reporte_1)
-GRANT SELECT ON ddbba.gasto_extraordinario
-TO rol_administrativo_general, rol_administrativo_bancario, rol_administrativo_operativo, rol_sistemas;
-GO
-
--- Permiso sobre ddbba.unidad_funcional (usada en sp_reporte_2)
-GRANT SELECT ON ddbba.unidad_funcional
-TO rol_administrativo_bancario, rol_sistemas;
 GO
