@@ -62,8 +62,8 @@ select * from personas.rol
 select * from finanzas.pago
 select * from finanzas.expensa
 select * from finanzas.tipo_gasto
-select * from finanzas.gastos_ordinarios
-select * from personas.proveedores
+select * from finanzas.gasto_ordinario
+select * from personas.proveedor
 go
 
 /* --- PASO 5: Crear datos adicionales ---*/
@@ -74,7 +74,7 @@ select * from gestion.tipo_envio
 select * from gestion.envio_expensa
 select * from finanzas.estado_financiero
 select * from finanzas.gasto_extraordinario
-select * from finanzas.cuotas
+select * from finanzas.cuota
 select * from finanzas.gasto_extraordinario
 select * from finanzas.pago where estado not like 'asociado'
 select * from finanzas.expensa

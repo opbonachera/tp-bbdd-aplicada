@@ -24,7 +24,7 @@ GO
 DROP INDEX IF EXISTS IX_pago_fecha_unidad_monto ON finanzas.pago;
 DROP INDEX IF EXISTS IX_unidad_funcional_departamento ON consorcios.unidad_funcional;
 DROP INDEX IF EXISTS IX_expensa_consorcio_fecha ON finanzas.expensa;
-DROP INDEX IF EXISTS IX_gastos_ordinarios_expensa ON finanzas.gastos_ordinarios;
+DROP INDEX IF EXISTS IX_gastos_ordinarios_expensa ON finanzas.gasto_ordinario;
 DROP INDEX IF EXISTS IX_gasto_extraordinario_expensa ON finanzas.gasto_extraordinario;
 DROP INDEX IF EXISTS IX_pago_consorcio_fecha_estado ON finanzas.pago;
 DROP INDEX IF EXISTS IX_detalle_expensas_por_uf_unidad_consorcio_expensa ON finanzas.detalle_expensas_por_uf;
@@ -65,16 +65,16 @@ DROP TABLE IF EXISTS finanzas.detalle_expensas_por_uf;
 DROP TABLE IF EXISTS finanzas.estado_financiero;
 DROP TABLE IF EXISTS finanzas.pago;
 DROP TABLE IF EXISTS gestion.envio_expensa;
-DROP TABLE IF EXISTS finanzas.cuotas;
+DROP TABLE IF EXISTS finanzas.cuota;
 DROP TABLE IF EXISTS finanzas.gasto_extraordinario;
-DROP TABLE IF EXISTS finanzas.gastos_ordinarios;
+DROP TABLE IF EXISTS finanzas.gasto_ordinario;
 DROP TABLE IF EXISTS finanzas.expensa;
 DROP TABLE IF EXISTS personas.rol;
 DROP TABLE IF EXISTS consorcios.unidad_funcional;
 DROP TABLE IF EXISTS gestion.tipo_envio;
 DROP TABLE IF EXISTS finanzas.tipo_gasto;
 DROP TABLE IF EXISTS personas.persona;
-DROP TABLE IF EXISTS personas.proveedores;
+DROP TABLE IF EXISTS personas.proveedor;
 DROP TABLE IF EXISTS consorcios.consorcio;
 GO
 
@@ -122,7 +122,7 @@ CREATE TABLE consorcios.consorcio (
 GO
 
 -- Tabla proveedores
-CREATE TABLE personas.proveedores (
+CREATE TABLE personas.proveedor (
     id_proveedores INT PRIMARY KEY IDENTITY(1,1),
     tipo_de_gasto VARCHAR(50),
     entidad VARCHAR(100),
@@ -166,10 +166,10 @@ CREATE TABLE consorcios.unidad_funcional (
     departamento CHAR(10),
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,
-    coeficiente FLOAT,
+    coeficiente decimal(12,3),
     saldo_anterior decimal(12,3) DEFAULT 0.00,
     cbu VARCHAR(30),
-    prorrateo FLOAT DEFAULT 0,
+    prorrateo decimal(12,3) DEFAULT 0.00,
     CONSTRAINT PK_unidad_funcional PRIMARY KEY (id_unidad_funcional, id_consorcio),
     FOREIGN KEY (id_consorcio) REFERENCES consorcios.consorcio(id_consorcio) ON DELETE CASCADE
 );
@@ -205,7 +205,7 @@ CREATE TABLE finanzas.expensa (
 GO
 
 -- Tabla gastos_ordinarios
-CREATE TABLE finanzas.gastos_ordinarios (
+CREATE TABLE finanzas.gasto_ordinario (
     id_gasto_ordinario INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT,
     id_tipo_gasto INT,
@@ -230,7 +230,7 @@ CREATE TABLE finanzas.gasto_extraordinario (
 GO
 
 -- Tabla cuotas
-CREATE TABLE finanzas.cuotas (
+CREATE TABLE finanzas.cuota (
     id_gasto_extraordinario INT,
     nro_cuota INT,
     PRIMARY KEY (id_gasto_extraordinario, nro_cuota),
@@ -304,7 +304,7 @@ GO
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-CREATE OR ALTER FUNCTION utils.fn_normalizar_monto (@valor VARCHAR(50))
+CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
 BEGIN
@@ -318,32 +318,34 @@ BEGIN
 */
 
     DECLARE @resultado NVARCHAR(50);
-    DECLARE @tieneSeparador BIT;
+    DECLARE @tieneSeparador TINYINT;
 
     -- 1) Limpiamos caracteres no deseados
-    SET @resultado = utils.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
+    SET @resultado = ddbba.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
     SET @resultado = REPLACE(@resultado, '$', ''); --Saca el $ (si lo tuviese)
 
     -- 2) Detectamos si tiene separador decimal
-    SET @tieneSeparador = CASE 
-                            WHEN CHARINDEX(',', @resultado) > 0 OR CHARINDEX('.', @resultado) > 0 --CHARINDEX nos busca la primer aparicion del caracter, si es > 0 -> quiere decir que hay por lo menos UNO de los separadores (ya sea coma o punto)
-                            THEN 1 
-                            ELSE 0 
-                          END;
+    SET @resultado = REPLACE(@resultado,',','.');
+    SET @tieneSeparador = CHARINDEX('.', REVERSE(@resultado)); --CHARINDEX nos busca la primer aparicion del caracter, si es > 0 -> quiere decir que hay por lo menos UNO de los separadores (ya sea coma o punto)
 
     -- 3) Eliminamos todos los separadores
-    SET @resultado = REPLACE(@resultado, ',', '');
-    SET @resultado = REPLACE(@resultado, '.', '');
+   
+    
 
     -- 4) Si tenia separador, insertamos el punto decimal
-    IF @tieneSeparador = 1 AND LEN(@resultado) > 2 --En el caso de que tenga tres digitos o mas,
+    IF @tieneSeparador = 3 --En el caso de que tenga tres digitos o mas,
+    BEGIN
+        SET @resultado = REPLACE(@resultado, '.', '');
         SET @resultado = STUFF(@resultado, LEN(@resultado) - 1, 0, '.'); --apuntamos a la posicion justo antes de los ultimos dos digitos (asumimos dos digitos decimales)
     --Si el numero tiene uno o dos digitos, entonces no entra al if y cuando castee solo le agrega el .00
-
+    END
+    ELSE
+        SET @resultado = REPLACE(@resultado, '.', '');
     -- 5) Devolvemos el número normalizado
     RETURN ISNULL(TRY_CAST(@resultado AS DECIMAL(12,2)), 0.00); --Trata de castear el texto a decimal, si no puede, devuelve null y lo transformamos a 0.00
 END
 GO
+
 
 CREATE OR ALTER FUNCTION utils.fn_limpiar_espacios (@valor VARCHAR(MAX))
 RETURNS VARCHAR(MAX)
@@ -469,7 +471,7 @@ BEGIN
         EXEC sp_executesql @sql;
 
     --Inserto los datos en la tabla original (sin duplicados)
-    INSERT INTO personas.proveedores (
+    INSERT INTO personas.proveedor (
         tipo_de_gasto,
         entidad,
         detalle,
@@ -489,7 +491,7 @@ BEGIN
     FROM #temp_proveedores AS t
     WHERE NOT EXISTS (
         SELECT 1
-        FROM personas.proveedores p
+        FROM personas.proveedor p
         WHERE 
             p.tipo_de_gasto = t.tipo_de_gasto
             AND p.entidad = 
@@ -740,7 +742,7 @@ BEGIN
     );
 
     -- Insertar gastos ordinarios (si no existen)
-    INSERT INTO finanzas.gastos_ordinarios (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
+    INSERT INTO finanzas.gasto_ordinario (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
     SELECT 
         e.id_expensa,
         t.id_tipo_gasto,
@@ -781,7 +783,7 @@ BEGIN
         (t.detalle = 'SERVICIOS PUBLICOS-Internet' AND tc.servicios_internet IS NOT NULL)
     )
     AND NOT EXISTS (
-        SELECT 1 FROM finanzas.gastos_ordinarios gaor
+        SELECT 1 FROM finanzas.gasto_ordinario gaor
         WHERE gaor.id_expensa = e.id_expensa
           AND gaor.id_tipo_gasto = t.id_tipo_gasto
     );
@@ -993,7 +995,7 @@ BEGIN
     SELECT 
         tp.id_pago,
         tp.fecha,
-        utils.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto, 
+        utils.fn_normalizar_monto(valor) AS monto, 
         tp.cbu, 
         'asociado',
         uf.id_unidad_funcional, 
@@ -1025,7 +1027,7 @@ BEGIN
     PRINT '---- Iniciando calculo de prorrateo por unidad funcional ----';
 
     UPDATE uf
-    SET uf.prorrateo = ROUND((CAST(uf.metros_cuadrados AS FLOAT) / tot.total_m2) * 100, 2)
+    SET uf.prorrateo = ROUND((CAST(uf.metros_cuadrados AS decimal(12,3)) / tot.total_m2) * 100, 2)
     FROM consorcios.unidad_funcional AS uf
     INNER JOIN (
         SELECT id_consorcio, SUM(metros_cuadrados) AS total_m2
@@ -1290,7 +1292,7 @@ BEGIN
             'Ordinario' AS Tipo,
             gaor.importe AS Importe
         FROM finanzas.expensa e
-        INNER JOIN finanzas.gastos_ordinarios gaor 
+        INNER JOIN finanzas.gasto_ordinario gaor 
             ON e.id_expensa = gaor.id_expensa
         WHERE 
             (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
@@ -1379,7 +1381,7 @@ BEGIN
             gor.importe AS Monto,
             'Ordinario' AS TipoGasto,
             e.id_consorcio
-        FROM finanzas.gastos_ordinarios gor
+        FROM finanzas.gasto_ordinario gor
         INNER JOIN finanzas.expensa e ON gor.id_expensa = e.id_expensa
         WHERE 
             (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
@@ -1541,7 +1543,7 @@ BEGIN
             CAST(p.fecha_pago AS DATE) AS fecha_pago
         FROM finanzas.pago p
         INNER JOIN finanzas.expensa e ON p.id_expensa = e.id_expensa
-        INNER JOIN finanzas.gastos_ordinarios go ON e.id_expensa = go.id_expensa
+        INNER JOIN finanzas.gasto_ordinario go ON e.id_expensa = go.id_expensa
         INNER JOIN consorcios.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
         WHERE
             (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
@@ -1570,7 +1572,7 @@ GO
 CREATE OR ALTER PROCEDURE utils.sp_generar_cuotas
 AS
 BEGIN
-    INSERT INTO finanzas.cuotas (nro_cuota, id_gasto_extraordinario)
+    INSERT INTO finanzas.cuota (nro_cuota, id_gasto_extraordinario)
     SELECT 
         n.nro,
         ge.id_gasto_extraordinario
@@ -1580,7 +1582,7 @@ BEGIN
         FROM sys.all_objects
     ) n
     WHERE NOT EXISTS (
-        SELECT 1 FROM finanzas.cuotas c
+        SELECT 1 FROM finanzas.cuota c
         WHERE c.id_gasto_extraordinario = ge.id_gasto_extraordinario
           AND c.nro_cuota = n.nro
     );
@@ -1589,27 +1591,27 @@ GO
 
 /* --- Generar Envíos de Expensas Random ---*/
 CREATE OR ALTER PROCEDURE utils.sp_generar_envios_expensas
-    @CantidadRegistros INT 
+    @cantidad_registros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
     
     DECLARE @i INT = 1;
-    DECLARE @IdExpensa INT;
-    DECLARE @IdUF INT;
+    DECLARE @id_expensa INT;
+    DECLARE @id_uf INT;
     DECLARE @IdConsorcio INT;
     DECLARE @IdTipo INT;
     DECLARE @TipoDoc VARCHAR(10);
     DECLARE @Documento BIGINT;
     DECLARE @FechaEnvio DATE;
     
-    WHILE @i <= @CantidadRegistros
+    WHILE @i <= @cantidad_registros
     BEGIN
         -- Seleccionar IDs random de tablas relacionadas
-        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
+        SET @id_expensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
         SET @IdTipo = (SELECT TOP 1 id_tipo_envio FROM gestion.tipo_envio ORDER BY NEWID());
         SELECT TOP 1 
-			  @IdUF = id_unidad_funcional,
+			  @id_uf = id_unidad_funcional,
 			  @IdConsorcio = id_consorcio
 	   FROM consorcios.unidad_funcional 
        ORDER BY NEWID();
@@ -1634,8 +1636,8 @@ BEGIN
             fecha_envio
         )
         VALUES (
-            @IdExpensa, 
-            @IdUF, 
+            @id_expensa, 
+            @id_uf, 
             @IdConsorcio,
             @IdTipo, 
             @Documento, 
@@ -1646,19 +1648,19 @@ BEGIN
         SET @i = @i + 1;
     END
     
-    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' envíos de expensas random.';
+    PRINT 'Se generaron ' + CAST(@cantidad_registros AS VARCHAR) + ' envíos de expensas random.';
 END
 GO
 
 /*--- GENERA GASTOS EXTRAORDINARIOS RELACIONADOS A EXPENSA ---*/
 CREATE OR ALTER PROCEDURE utils.sp_generar_gastos_extraordinarios
-    @CantidadRegistros INT 
+    @cantidad_registros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
     
     DECLARE @i INT = 1;
-    DECLARE @IdExpensa INT;
+    DECLARE @id_expensa INT;
     DECLARE @Detalle VARCHAR(200);
     DECLARE @TotalCuotas INT;
     DECLARE @PagoEnCuotas BIT;
@@ -1677,9 +1679,9 @@ BEGIN
         ('Refacción de hall de entrada'),
         ('Arreglo de instalación eléctrica');
     
-    WHILE @i <= @CantidadRegistros
+    WHILE @i <= @cantidad_registros
     BEGIN
-        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
+        SET @id_expensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
         SET @Detalle = (SELECT TOP 1 Descripcion FROM @Detalles ORDER BY NEWID());
         SET @PagoEnCuotas = CASE WHEN RAND() > 0.5 THEN 1 ELSE 0 END;
         SET @TotalCuotas = CASE WHEN @PagoEnCuotas = 1 THEN FLOOR(RAND() * 11) + 2 ELSE 1 END;
@@ -1687,27 +1689,27 @@ BEGIN
         
         INSERT INTO finanzas.gasto_extraordinario (id_expensa, detalle, total_cuotas, 
                                            pago_en_cuotas, importe_total)
-        VALUES (@IdExpensa, @Detalle, @TotalCuotas, @PagoEnCuotas, @ImporteTotal);
+        VALUES (@id_expensa, @Detalle, @TotalCuotas, @PagoEnCuotas, @ImporteTotal);
         
         SET @i = @i + 1;
     END
     
-    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' gastos extraordinarios random.';
+    PRINT 'Se generaron ' + CAST(@cantidad_registros AS VARCHAR) + ' gastos extraordinarios random.';
 END
 GO
 
 /*--- GENERA PAGOS ---*/
 CREATE OR ALTER PROCEDURE utils.sp_generar_pagos
-    @CantidadRegistros INT 
+    @cantidad_registros INT 
 AS
 BEGIN
     SET NOCOUNT ON;
     
     DECLARE @i INT = 1;
     DECLARE @IdPago INT;
-    DECLARE @IdUF INT;
+    DECLARE @id_uf INT;
     DECLARE @IdConsorcio INT;
-    DECLARE @IdExpensa INT;
+    DECLARE @id_expensa INT;
     DECLARE @Fecha DATE;
     DECLARE @Monto DECIMAL(18,2);
     DECLARE @CbuOrigen VARCHAR(22);
@@ -1716,19 +1718,19 @@ BEGIN
     -- Obtener el último id_pago existente
     SELECT @IdPago = ISNULL(MAX(id_pago), 0) FROM finanzas.pago;
     
-    WHILE @i <= @CantidadRegistros
+    WHILE @i <= @cantidad_registros
     BEGIN
         SET @IdPago = @IdPago + 1;
         
         -- Seleccionar unidad funcional y consorcio juntos
         SELECT TOP 1 
-            @IdUF = id_unidad_funcional,
+            @id_uf = id_unidad_funcional,
             @IdConsorcio = id_consorcio
         FROM consorcios.unidad_funcional 
         ORDER BY NEWID();
         
         -- Seleccionar una expensa asociada al mismo consorcio
-        SET @IdExpensa = (
+        SET @id_expensa = (
             SELECT TOP 1 id_expensa 
             FROM finanzas.expensa 
             WHERE id_consorcio = @IdConsorcio
@@ -1736,8 +1738,8 @@ BEGIN
         );
 
         -- Si no se encontró expensa, elegir cualquiera 
-        IF @IdExpensa IS NULL
-            SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
+        IF @id_expensa IS NULL
+            SET @id_expensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
 
         SET @Fecha = DATEADD(DAY, -FLOOR(RAND() * 180), GETDATE());
         SET @Monto = ROUND(RAND() * 100000 + 5000, 2);
@@ -1773,9 +1775,9 @@ BEGIN
         )
         VALUES (
             @IdPago,
-            @IdUF,
+            @id_uf,
             @IdConsorcio,
-            @IdExpensa,
+            @id_expensa,
             @Fecha,
             @Monto,
             @CbuOrigen,
@@ -1785,7 +1787,7 @@ BEGIN
         SET @i = @i + 1;
     END
     
-    PRINT 'Se generaron ' + CAST(@CantidadRegistros AS VARCHAR) + ' pagos random.';
+    PRINT 'Se generaron ' + CAST(@cantidad_registros AS VARCHAR) + ' pagos random.';
 END
 GO
 
@@ -1813,7 +1815,7 @@ GO
 /* --- GENERA VENCIMIENTO DE EXPENSAS ---*/
 CREATE OR ALTER PROCEDURE utils.sp_generar_vencimientos_expensas
     @dias_primer_vencimiento INT ,  -- Días después de emisión para 1er vencimiento
-    @dias_segundo_vencimiento INT   -- Días después de emisión para 2do vencimiento
+    @cantidad_registros INT   -- Días después de emisión para 2do vencimiento
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1825,7 +1827,7 @@ BEGIN
         UPDATE finanzas.expensa
         SET 
             primer_vencimiento = DATEADD(DAY, @dias_primer_vencimiento, fecha_emision),
-            segundo_vencimiento = DATEADD(DAY, @dias_segundo_vencimiento, fecha_emision)
+            segundo_vencimiento = DATEADD(DAY, @cantidad_registros, fecha_emision)
         WHERE 
             fecha_emision IS NOT NULL
             AND (primer_vencimiento IS NULL OR segundo_vencimiento IS NULL);
@@ -1880,24 +1882,24 @@ BEGIN
 
  -- 1. Cargar datos base
 
-    DECLARE @Expensas TABLE (id_expensa INT, fecha_1er_vto DATE, fecha_2do_vto DATE);
+    DECLARE @expensas TABLE (id_expensa INT, fecha_1er_vto DATE, fecha_2do_vto DATE);
     DECLARE @UF TABLE (id_unidad_funcional INT, id_consorcio INT);
-    DECLARE @GastoOrd TABLE (monto DECIMAL(12,2));
-    DECLARE @GastoExt TABLE (monto DECIMAL(12,2));
+    DECLARE @gasto_ord TABLE (monto DECIMAL(12,2));
+    DECLARE @gasto_ext TABLE (monto DECIMAL(12,2));
 
-    INSERT INTO @Expensas
+    INSERT INTO @expensas
     SELECT id_expensa, primer_vencimiento, segundo_vencimiento FROM finanzas.expensa;
 
     INSERT INTO @UF
     SELECT id_unidad_funcional, id_consorcio FROM consorcios.unidad_funcional;
 
-    INSERT INTO @GastoOrd
-    SELECT importe FROM finanzas.gastos_ordinarios;
+    INSERT INTO @gasto_ord
+    SELECT importe FROM finanzas.gasto_ordinario;
 
-    INSERT INTO @GastoExt
+    INSERT INTO @gasto_ext
     SELECT importe_total FROM finanzas.gasto_extraordinario;
 
-    IF NOT EXISTS (SELECT 1 FROM @Expensas) OR NOT EXISTS (SELECT 1 FROM @UF)
+    IF NOT EXISTS (SELECT 1 FROM @expensas) OR NOT EXISTS (SELECT 1 FROM @UF)
     BEGIN
         PRINT N' No hay datos suficientes en expensa o unidad_funcional.';
         RETURN;
@@ -1912,7 +1914,7 @@ BEGIN
             @id_expensa = id_expensa,
             @fecha_1er_vto = fecha_1er_vto,
             @fecha_2do_vto = fecha_2do_vto
-        FROM @Expensas ORDER BY NEWID();
+        FROM @expensas ORDER BY NEWID();
 
         SELECT TOP 1 
             @id_unidad_funcional = id_unidad_funcional,
@@ -1930,8 +1932,8 @@ BEGIN
             SET @fecha_pago = CAST(GETDATE() AS DATE); -- sin pago: hoy
 
         -- Gastos ordinarios y extraordinarios
-        SELECT TOP 1 @gastos_ordinarios = monto FROM @GastoOrd ORDER BY NEWID();
-        SELECT TOP 1 @gastos_extraordinarios = monto FROM @GastoExt ORDER BY NEWID();
+        SELECT TOP 1 @gastos_ordinarios = monto FROM @gasto_ord ORDER BY NEWID();
+        SELECT TOP 1 @gastos_extraordinarios = monto FROM @gasto_ext ORDER BY NEWID();
 
         -- Valor de la cuota
         SET @valor_cuota = @gastos_ordinarios + @gastos_extraordinarios;
@@ -2035,7 +2037,7 @@ BEGIN
 
     FROM finanzas.expensa e
     LEFT JOIN (
-        SELECT id_expensa, SUM(importe) AS monto FROM finanzas.gastos_ordinarios GROUP BY id_expensa
+        SELECT id_expensa, SUM(importe) AS monto FROM finanzas.gasto_ordinario GROUP BY id_expensa
     ) AS goo ON e.id_expensa = goo.id_expensa
     LEFT JOIN (
         SELECT id_expensa, SUM(importe_total) AS monto FROM finanzas.gasto_extraordinario GROUP BY id_expensa
@@ -2063,12 +2065,12 @@ as
 begin
 	
 	EXEC utils.sp_generar_tipos_envio_random;
-	EXEC utils.sp_generar_envios_expensas @CantidadRegistros = 10;
+	EXEC utils.sp_generar_envios_expensas @cantidad_registros = 10;
 	EXEC utils.sp_generar_estado_financiero;
-	EXEC utils.sp_generar_gastos_extraordinarios @CantidadRegistros = 10;
+	EXEC utils.sp_generar_gastos_extraordinarios @cantidad_registros = 10;
 	EXEC utils.sp_generar_cuotas ;
-	EXEC utils.sp_generar_pagos @CantidadRegistros = 10
-	EXEC utils.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
+	EXEC utils.sp_generar_pagos @cantidad_registros = 10
+	EXEC utils.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@cantidad_registros=20
 	EXEC utils.sp_generar_detalle_expensas_por_uf @cantidad=10
 
 end;
