@@ -15,6 +15,42 @@ ingreso de datos posible.
 - Perez, Olivia Constanza — 46641730 - Usuario: [perezolivia](https://github.com/perezolivia)
 - Guardia Gabriel — 42364065 - Usuario: [roqueguardia](https://github.com/roqueguardia)
 
+## Nomenclatura y Estándares de Desarrollo
+
+Para garantizar la coherencia y mantenibilidad del código T-SQL, se definieron las siguientes reglas de nomenclatura aplicadas a todos los objetos de la base de datos.
+
+### 1. Convenciones Generales
+
+* **Idioma:** Español (se evita el uso de ñ y tildes en nombres de objetos para compatibilidad).
+* **Case:** `snake_case` (minúsculas separadas por guiones bajos).
+* **Singular/Plural:**
+    * **Tablas:** Nombres en **singular** (ej. `unidad_funcional`, `pago`).
+    * **Esquemas:** Sustantivos en **plural** o colectivos (ej. `consorcios`, `finanzas`).
+
+### 2. Prefijos y Definiciones
+
+| Objeto de Base de Datos | Prefijo / Formato | Descripción | Ejemplo |
+| :--- | :--- | :--- | :--- |
+| **Primary Key (PK)** | `id_` + [entidad] | Identificador único numérico o compuesto. | `id_consorcio` |
+| **Foreign Key (FK)** | `id_` + [entidad] | Referencia a la PK de otra tabla. | `id_expensa` |
+| **Stored Procedures** | `sp_` + [verbo] | Procedimientos almacenados para lógica de negocio. | `sp_generar_cuotas` |
+| **Funciones** | `fn_` + [utilidad] | Funciones escalares o de tabla para transformación de datos. | `fn_normalizar_monto` |
+| **Índices** | `IX_` + [tabla] + [cols] | Índices no agrupados para optimización de consultas. | `IX_pago_fecha` |
+| **Variables** | `@` + [nombre] | Variables locales y parámetros (camelCase o snake_case). | `@fecha_hasta` |
+
+### 3. Organización de Esquemas
+
+La base de datos se estructura en esquemas lógicos para separar dominios de negocio:
+
+| Esquema | Propósito | Tablas Principales |
+| :--- | :--- | :--- |
+| **`consorcios`** | Datos estructurales de los inmuebles. | `consorcio`, `unidad_funcional` |
+| **`personas`** | Gestión de entidades legales y físicas. | `persona`, `rol`, `proveedor` |
+| **`finanzas`** | Núcleo transaccional y contable. | `pago`, `expensa`, `gasto_ordinario`, `cuota` |
+| **`gestion`** | Procesos administrativos y comunicación. | `envio_expensa`, `tipo_envio` |
+| **`datos`** | Capa de reporting y análisis de negocio. | (Contiene solo Stored Procedures de reporte) |
+| **`utils`** | Herramientas de sistema e importación. | (Scripts de carga masiva y funciones auxiliares) |
+
 ## Organización del proyecto
 El proyecto se encuentra organizado según las 7 entregas requeridas para la aprobación del trabajo práctico. 
 
