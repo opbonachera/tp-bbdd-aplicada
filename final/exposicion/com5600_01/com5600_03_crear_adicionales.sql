@@ -19,20 +19,20 @@ GO
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CREACION DE PROCEDIMIENTOS PARA GENERAR DATOS ADICIONALES  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /* --- GENERA CUOTAS CORRESPONDIENTES A GASTOS EXTRAORDINARIOS ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_cuotas
+CREATE OR ALTER PROCEDURE utils.sp_generar_cuotas
 AS
 BEGIN
-    INSERT INTO ddbba.cuotas (nro_cuota, id_gasto_extraordinario)
+    INSERT INTO finanzas.cuotas (nro_cuota, id_gasto_extraordinario)
     SELECT 
         n.nro,
         ge.id_gasto_extraordinario
-    FROM ddbba.gasto_extraordinario ge
+    FROM finanzas.gasto_extraordinario ge
     CROSS APPLY (
         SELECT TOP (ge.total_cuotas) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS nro
         FROM sys.all_objects
     ) n
     WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.cuotas c
+        SELECT 1 FROM finanzas.cuotas c
         WHERE c.id_gasto_extraordinario = ge.id_gasto_extraordinario
           AND c.nro_cuota = n.nro
     );
@@ -40,7 +40,7 @@ END
 GO
 
 /* --- Generar Envíos de Expensas Random ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_envios_expensas
+CREATE OR ALTER PROCEDURE utils.sp_generar_envios_expensas
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -58,25 +58,25 @@ BEGIN
     WHILE @i <= @CantidadRegistros
     BEGIN
         -- Seleccionar IDs random de tablas relacionadas
-        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM ddbba.expensa ORDER BY NEWID());
-        SET @IdTipo = (SELECT TOP 1 id_tipo_envio FROM ddbba.tipo_envio ORDER BY NEWID());
+        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
+        SET @IdTipo = (SELECT TOP 1 id_tipo_envio FROM gestion.tipo_envio ORDER BY NEWID());
         SELECT TOP 1 
 			  @IdUF = id_unidad_funcional,
 			  @IdConsorcio = id_consorcio
-	   FROM ddbba.unidad_funcional 
+	   FROM consorcios.unidad_funcional 
        ORDER BY NEWID();
         
         -- Obtener un documento random de la tabla persona
         SELECT TOP 1 
             @TipoDoc = tipo_documento,
             @Documento = nro_documento
-        FROM ddbba.persona
+        FROM personas.persona
         ORDER BY NEWID();
         
         -- Generar fecha random en los últimos 365 días
         SET @FechaEnvio = DATEADD(DAY, -FLOOR(RAND() * 365), GETDATE());
         
-        INSERT INTO ddbba.envio_expensa (
+        INSERT INTO gestion.envio_expensa (
             id_expensa, 
             id_unidad_funcional, 
             id_consorcio,
@@ -103,7 +103,7 @@ END
 GO
 
 /*--- GENERA GASTOS EXTRAORDINARIOS RELACIONADOS A EXPENSA ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_gastos_extraordinarios
+CREATE OR ALTER PROCEDURE utils.sp_generar_gastos_extraordinarios
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -131,13 +131,13 @@ BEGIN
     
     WHILE @i <= @CantidadRegistros
     BEGIN
-        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM ddbba.expensa ORDER BY NEWID());
+        SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
         SET @Detalle = (SELECT TOP 1 Descripcion FROM @Detalles ORDER BY NEWID());
         SET @PagoEnCuotas = CASE WHEN RAND() > 0.5 THEN 1 ELSE 0 END;
         SET @TotalCuotas = CASE WHEN @PagoEnCuotas = 1 THEN FLOOR(RAND() * 11) + 2 ELSE 1 END;
         SET @ImporteTotal = ROUND(RAND() * 500000 + 50000, 2);
         
-        INSERT INTO ddbba.gasto_extraordinario (id_expensa, detalle, total_cuotas, 
+        INSERT INTO finanzas.gasto_extraordinario (id_expensa, detalle, total_cuotas, 
                                            pago_en_cuotas, importe_total)
         VALUES (@IdExpensa, @Detalle, @TotalCuotas, @PagoEnCuotas, @ImporteTotal);
         
@@ -149,7 +149,7 @@ END
 GO
 
 /*--- GENERA PAGOS ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_pagos
+CREATE OR ALTER PROCEDURE utils.sp_generar_pagos
     @CantidadRegistros INT 
 AS
 BEGIN
@@ -166,7 +166,7 @@ BEGIN
     DECLARE @Estado VARCHAR(20);
     
     -- Obtener el último id_pago existente
-    SELECT @IdPago = ISNULL(MAX(id_pago), 0) FROM ddbba.pago;
+    SELECT @IdPago = ISNULL(MAX(id_pago), 0) FROM finanzas.pago;
     
     WHILE @i <= @CantidadRegistros
     BEGIN
@@ -176,25 +176,25 @@ BEGIN
         SELECT TOP 1 
             @IdUF = id_unidad_funcional,
             @IdConsorcio = id_consorcio
-        FROM ddbba.unidad_funcional 
+        FROM consorcios.unidad_funcional 
         ORDER BY NEWID();
         
         -- Seleccionar una expensa asociada al mismo consorcio
         SET @IdExpensa = (
             SELECT TOP 1 id_expensa 
-            FROM ddbba.expensa 
+            FROM finanzas.expensa 
             WHERE id_consorcio = @IdConsorcio
             ORDER BY NEWID()
         );
 
         -- Si no se encontró expensa, elegir cualquiera 
         IF @IdExpensa IS NULL
-            SET @IdExpensa = (SELECT TOP 1 id_expensa FROM ddbba.expensa ORDER BY NEWID());
+            SET @IdExpensa = (SELECT TOP 1 id_expensa FROM finanzas.expensa ORDER BY NEWID());
 
         SET @Fecha = DATEADD(DAY, -FLOOR(RAND() * 180), GETDATE());
         SET @Monto = ROUND(RAND() * 100000 + 5000, 2);
         
-        SET @CbuOrigen = (SELECT TOP 1 cbu FROM ddbba.persona WHERE cbu IS NOT NULL ORDER BY NEWID());
+        SET @CbuOrigen = (SELECT TOP 1 cbu FROM personas.persona WHERE cbu IS NOT NULL ORDER BY NEWID());
         
         IF @CbuOrigen IS NULL
         BEGIN
@@ -213,7 +213,7 @@ BEGIN
             ELSE 'Rechazado'
         END;
         
-        INSERT INTO ddbba.pago (
+        INSERT INTO finanzas.pago (
             id_pago,
             id_unidad_funcional,
             id_consorcio,
@@ -242,19 +242,19 @@ END
 GO
 
 /*--- GENERA LOS TIPOS DE ENVIO---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_tipos_envio_random
+CREATE OR ALTER PROCEDURE utils.sp_generar_tipos_envio_random
 AS
 BEGIN
     SET NOCOUNT ON;
     
     -- Limpiar tabla si existe datos
-    IF EXISTS (SELECT 1 FROM ddbba.tipo_envio)
+    IF EXISTS (SELECT 1 FROM gestion.tipo_envio)
     BEGIN
         PRINT 'La tabla tipo_envio ya contiene datos. No se insertarán duplicados.';
         RETURN;
     END
     
-    INSERT INTO ddbba.tipo_envio (detalle) VALUES
+    INSERT INTO gestion.tipo_envio (detalle) VALUES
         ('Email'),
         ('WhatsApp');
     
@@ -263,7 +263,7 @@ END
 GO
 
 /* --- GENERA VENCIMIENTO DE EXPENSAS ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_vencimientos_expensas
+CREATE OR ALTER PROCEDURE utils.sp_generar_vencimientos_expensas
     @dias_primer_vencimiento INT ,  -- Días después de emisión para 1er vencimiento
     @dias_segundo_vencimiento INT   -- Días después de emisión para 2do vencimiento
 AS
@@ -274,7 +274,7 @@ BEGIN
         BEGIN TRANSACTION;
         
         -- Actualizar solo los registros que tienen fecha_emision pero no tienen vencimientos
-        UPDATE ddbba.expensa
+        UPDATE finanzas.expensa
         SET 
             primer_vencimiento = DATEADD(DAY, @dias_primer_vencimiento, fecha_emision),
             segundo_vencimiento = DATEADD(DAY, @dias_segundo_vencimiento, fecha_emision)
@@ -308,7 +308,7 @@ END;
 GO
 
 /*--- CALCULA DETALLES DE EXPENSA POR UNIDAD FUNCIONAL ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_detalle_expensas_por_uf
+CREATE OR ALTER PROCEDURE utils.sp_generar_detalle_expensas_por_uf
     @cantidad INT 
 AS
 BEGIN
@@ -338,16 +338,16 @@ BEGIN
     DECLARE @GastoExt TABLE (monto DECIMAL(12,2));
 
     INSERT INTO @Expensas
-    SELECT id_expensa, primer_vencimiento, segundo_vencimiento FROM ddbba.expensa;
+    SELECT id_expensa, primer_vencimiento, segundo_vencimiento FROM finanzas.expensa;
 
     INSERT INTO @UF
-    SELECT id_unidad_funcional, id_consorcio FROM ddbba.unidad_funcional;
+    SELECT id_unidad_funcional, id_consorcio FROM consorcios.unidad_funcional;
 
     INSERT INTO @GastoOrd
-    SELECT importe FROM ddbba.gastos_ordinarios;
+    SELECT importe FROM finanzas.gastos_ordinarios;
 
     INSERT INTO @GastoExt
-    SELECT importe_total FROM ddbba.gasto_extraordinario;
+    SELECT importe_total FROM finanzas.gasto_extraordinario;
 
     IF NOT EXISTS (SELECT 1 FROM @Expensas) OR NOT EXISTS (SELECT 1 FROM @UF)
     BEGIN
@@ -373,7 +373,7 @@ BEGIN
 
         -- Buscar fecha de pago (si existe)
         SELECT TOP 1 @fecha_pago = fecha_pago
-        FROM ddbba.pago
+        FROM finanzas.pago
         WHERE id_expensa = @id_expensa
           AND id_unidad_funcional = @id_unidad_funcional
           AND id_consorcio = @id_consorcio;
@@ -401,7 +401,7 @@ BEGIN
         SET @monto_total = @valor_cuota + @deuda;
 
         -- Insertar en detalle
-        INSERT INTO ddbba.detalle_expensas_por_uf (
+        INSERT INTO finanzas.detalle_expensas_por_uf (
             id_detalle,
             id_expensa,
             id_unidad_funcional,
@@ -432,16 +432,16 @@ END;
 GO
  
 /*--- CALCULA LOS ESTADOS FINANCIEROS (Corresponde a UF)---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_generar_estado_financiero
+CREATE OR ALTER PROCEDURE utils.sp_generar_estado_financiero
 AS
 BEGIN
     SET NOCOUNT ON;
 
     -- 1. Limpiar la tabla de estados anteriores
-    DELETE FROM ddbba.estado_financiero;
+    DELETE FROM finanzas.estado_financiero;
 
     -- 2. Insertar los nuevos estados financieros de forma masiva
-    INSERT INTO ddbba.estado_financiero (
+    INSERT INTO finanzas.estado_financiero (
         id_expensa,
         saldo_anterior,
         ingresos_en_termino,
@@ -485,15 +485,15 @@ BEGIN
                 ELSE ISNULL(SUM(de.monto_total),0) - ISNULL(SUM(p.monto),0)
               END AS saldo_cierre
 
-    FROM ddbba.expensa e
+    FROM finanzas.expensa e
     LEFT JOIN (
-        SELECT id_expensa, SUM(importe) AS monto FROM ddbba.gastos_ordinarios GROUP BY id_expensa
+        SELECT id_expensa, SUM(importe) AS monto FROM finanzas.gastos_ordinarios GROUP BY id_expensa
     ) AS goo ON e.id_expensa = goo.id_expensa
     LEFT JOIN (
-        SELECT id_expensa, SUM(importe_total) AS monto FROM ddbba.gasto_extraordinario GROUP BY id_expensa
+        SELECT id_expensa, SUM(importe_total) AS monto FROM finanzas.gasto_extraordinario GROUP BY id_expensa
     ) AS ge ON e.id_expensa = ge.id_expensa
-    LEFT JOIN ddbba.pago AS p ON e.id_expensa = p.id_expensa
-    LEFT JOIN ddbba.detalle_expensas_por_uf AS de ON e.id_expensa = de.id_expensa
+    LEFT JOIN finanzas.pago AS p ON e.id_expensa = p.id_expensa
+    LEFT JOIN finanzas.detalle_expensas_por_uf AS de ON e.id_expensa = de.id_expensa
 
     CROSS APPLY (
         SELECT ISNULL(goo.monto,0) + ISNULL(ge.monto,0) AS egresos_del_mes
@@ -510,18 +510,18 @@ END;
 GO
 
 /*--- EJECUTA TODOS LOS SP CREADOS ---*/
-CREATE OR ALTER PROCEDURE ddbba.sp_crear_datos_adicionales
+CREATE OR ALTER PROCEDURE utils.sp_crear_datos_adicionales
 as
 begin
 	
-	EXEC ddbba.sp_generar_tipos_envio_random;
-	EXEC ddbba.sp_generar_envios_expensas @CantidadRegistros = 10;
-	EXEC ddbba.sp_generar_estado_financiero;
-	EXEC ddbba.sp_generar_gastos_extraordinarios @CantidadRegistros = 10;
-	EXEC ddbba.sp_generar_cuotas ;
-	EXEC ddbba.sp_generar_pagos @CantidadRegistros = 10
-	EXEC ddbba.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
-	EXEC ddbba.sp_generar_detalle_expensas_por_uf @cantidad=10
+	EXEC utils.sp_generar_tipos_envio_random;
+	EXEC utils.sp_generar_envios_expensas @CantidadRegistros = 10;
+	EXEC utils.sp_generar_estado_financiero;
+	EXEC utils.sp_generar_gastos_extraordinarios @CantidadRegistros = 10;
+	EXEC utils.sp_generar_cuotas ;
+	EXEC utils.sp_generar_pagos @CantidadRegistros = 10
+	EXEC utils.sp_generar_vencimientos_expensas @dias_primer_vencimiento=15,@dias_Segundo_vencimiento=20
+	EXEC utils.sp_generar_detalle_expensas_por_uf @cantidad=10
 
 end;
 

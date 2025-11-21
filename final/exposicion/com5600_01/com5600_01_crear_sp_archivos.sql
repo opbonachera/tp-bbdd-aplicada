@@ -19,7 +19,7 @@ GO
 
 
 -- /* --- IMPORTA CONSORCIOS (datos varios.xlsx -> hoja Consorcios) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_consorcios
+CREATE OR ALTER PROCEDURE consorcios.sp_importar_consorcios
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
@@ -63,7 +63,7 @@ BEGIN
     DELETE FROM D WHERE rn > 1;
     PRINT 'Duplicados eliminados.';
 
-    INSERT INTO ddbba.consorcio (
+    INSERT INTO consorcios.consorcio (
         nombre,
         metros_cuadrados,
         direccion,
@@ -77,7 +77,7 @@ BEGIN
     from #temp_consorcios tc
     WHERE NOT EXISTS (
             SELECT 1
-            FROM ddbba.consorcio AS dest
+            FROM consorcios.consorcio AS dest
             WHERE dest.nombre = tc.nombre
         );
 
@@ -90,7 +90,7 @@ END
 GO
 
 /* --- IMPORTA PROVEEDORES (datos varios.xlsx -> hoja Proveedores) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_proveedores
+CREATE OR ALTER PROCEDURE personas.sp_importar_proveedores
 	@ruta_archivo varchar(255)
 AS
 BEGIN
@@ -123,7 +123,7 @@ BEGIN
         EXEC sp_executesql @sql;
 
     --Inserto los datos en la tabla original (sin duplicados)
-    INSERT INTO ddbba.Proveedores (
+    INSERT INTO personas.Proveedores (
         tipo_de_gasto,
         entidad,
         detalle,
@@ -143,7 +143,7 @@ BEGIN
     FROM #temp_proveedores AS t
     WHERE NOT EXISTS (
         SELECT 1
-        FROM ddbba.Proveedores p
+        FROM personas.Proveedores p
         WHERE 
             p.tipo_de_gasto = t.tipo_de_gasto
             AND p.entidad = 
@@ -166,7 +166,7 @@ END
 GO
 
 /* --- IMPORTA INQUILINOS Y PROPIETARIOS (Inquilino-propietarios-datos.csv) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_inquilinos_propietarios
+CREATE OR ALTER PROCEDURE personas.sp_importar_inquilinos_propietarios
     @ruta_archivo VARCHAR(4000)
 AS
 BEGIN
@@ -211,7 +211,7 @@ BEGIN
     DELETE FROM cte WHERE rn > 1;
 
     -- Insertar en tabla persona sin duplicar
-    INSERT INTO ddbba.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
+    INSERT INTO personas.persona (nro_documento, tipo_documento, nombre, mail, telefono, cbu)
     SELECT
             DNI,
             'DNI' as tipo_documento,
@@ -228,7 +228,7 @@ BEGIN
     AND NOT EXISTS ( 
     -- Controlamos que no exista una persona con el mismo dni y tipo en la tabla (control de insercion de duplicados)
         SELECT 1
-        FROM ddbba.persona p
+        FROM personas.persona p
         WHERE p.nro_documento = DNI
     );
 
@@ -240,7 +240,7 @@ END;
 GO
 
 /* --- IMPORTA PAGOS (Pagos_consorcios.csv) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_pagos
+CREATE OR ALTER PROCEDURE finanzas.sp_importar_pagos
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
@@ -294,7 +294,7 @@ END;
 GO
 
 /* --- IMPORTA SERVICIOS (Servicios.servicios.json) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_servicios
+CREATE OR ALTER PROCEDURE finanzas.sp_importar_servicios
     @ruta_archivo NVARCHAR(4000),
     @Anio INT = 2025
 AS
@@ -351,33 +351,33 @@ BEGIN
     -- Normalizar valores
     UPDATE #tempConsorcios
     SET
-        mes = ddbba.fn_limpiar_espacios(mes),
-        bancarios = ddbba.fn_normalizar_monto(bancarios),
-        limpieza = ddbba.fn_normalizar_monto(limpieza),
-        administracion = ddbba.fn_normalizar_monto(administracion),
-        seguros = ddbba.fn_normalizar_monto(seguros),
-        gastos_generales = ddbba.fn_normalizar_monto(gastos_generales),
-        servicios_agua = ddbba.fn_normalizar_monto(servicios_agua),
-        servicios_luz = ddbba.fn_normalizar_monto(servicios_luz),
-        servicios_internet = ddbba.fn_normalizar_monto(servicios_internet);
+        mes = utils.fn_limpiar_espacios(mes),
+        bancarios = utils.fn_normalizar_monto(bancarios),
+        limpieza = utils.fn_normalizar_monto(limpieza),
+        administracion = utils.fn_normalizar_monto(administracion),
+        seguros = utils.fn_normalizar_monto(seguros),
+        gastos_generales = utils.fn_normalizar_monto(gastos_generales),
+        servicios_agua = utils.fn_normalizar_monto(servicios_agua),
+        servicios_luz = utils.fn_normalizar_monto(servicios_luz),
+        servicios_internet = utils.fn_normalizar_monto(servicios_internet);
 
     -- Insertar tipos de gasto (si no existen)
-    INSERT INTO ddbba.tipo_gasto (detalle)
+    INSERT INTO finanzas.tipo_gasto (detalle)
     SELECT detalle
     FROM (VALUES ('BANCARIOS'), ('LIMPIEZA'), ('ADMINISTRACION'), ('SEGUROS'),
            ('GASTOS GENERALES'), ('SERVICIOS PUBLICOS-Agua'), 
            ('SERVICIOS PUBLICOS-Luz'), ('SERVICIOS PUBLICOS-Internet')
     ) AS t(detalle)
     WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.tipo_gasto g WHERE g.detalle = t.detalle
+        SELECT 1 FROM finanzas.tipo_gasto g WHERE g.detalle = t.detalle
     );
 
     -- Insertar expensas por consorcio/mes
-    INSERT INTO ddbba.expensa (id_consorcio, fecha_emision)
+    INSERT INTO finanzas.expensa (id_consorcio, fecha_emision)
     SELECT DISTINCT c.id_consorcio,
         TRY_CONVERT(DATE, CONCAT('01-', m.mes_num, '-', @Anio), 105)
     FROM #tempConsorcios tc
-    INNER JOIN ddbba.consorcio c ON c.nombre = tc.nombre_consorcio
+    INNER JOIN consorcios.consorcio c ON c.nombre = tc.nombre_consorcio
     CROSS APPLY (
         SELECT CASE LOWER(LTRIM(RTRIM(tc.mes)))
             WHEN 'enero' THEN '01' WHEN 'febrero' THEN '02' WHEN 'marzo' THEN '03'
@@ -388,13 +388,13 @@ BEGIN
         END AS mes_num
     ) AS m
     WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.expensa e
+        SELECT 1 FROM finanzas.expensa e
         WHERE e.id_consorcio = c.id_consorcio
           AND e.fecha_emision = TRY_CONVERT(DATE, CONCAT('01-', m.mes_num, '-', @Anio), 105)
     );
-
+   
     -- Insertar gastos ordinarios (si no existen)
-    INSERT INTO ddbba.gastos_ordinarios (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
+    INSERT INTO finanzas.gastos_ordinarios (id_expensa, id_tipo_gasto, detalle, nro_factura, importe)
     SELECT 
         e.id_expensa,
         t.id_tipo_gasto,
@@ -411,7 +411,7 @@ BEGIN
             WHEN 'SERVICIOS PUBLICOS-Internet' THEN TRY_CAST(tc.servicios_internet AS DECIMAL(12,2))
         END AS importe
     FROM #tempConsorcios tc
-    INNER JOIN ddbba.consorcio c ON c.nombre = tc.nombre_consorcio
+    INNER JOIN consorcios.consorcio c ON c.nombre = tc.nombre_consorcio
     CROSS APPLY (
         SELECT CASE LOWER(LTRIM(RTRIM(tc.mes)))
             WHEN 'enero' THEN '01' WHEN 'febrero' THEN '02' WHEN 'marzo' THEN '03'
@@ -421,9 +421,9 @@ BEGIN
             ELSE NULL
         END AS mes_num
     ) AS m
-    INNER JOIN ddbba.expensa e ON e.id_consorcio = c.id_consorcio
+    INNER JOIN finanzas.expensa e ON e.id_consorcio = c.id_consorcio
         AND e.fecha_emision = TRY_CONVERT(DATE, CONCAT('01-', m.mes_num, '-', @Anio), 105)
-    CROSS JOIN ddbba.tipo_gasto t
+    CROSS JOIN finanzas.tipo_gasto t
     WHERE (
         (t.detalle = 'BANCARIOS' AND tc.bancarios IS NOT NULL) OR
         (t.detalle = 'LIMPIEZA' AND tc.limpieza IS NOT NULL) OR
@@ -435,7 +435,7 @@ BEGIN
         (t.detalle = 'SERVICIOS PUBLICOS-Internet' AND tc.servicios_internet IS NOT NULL)
     )
     AND NOT EXISTS (
-        SELECT 1 FROM ddbba.gastos_ordinarios gaor
+        SELECT 1 FROM finanzas.gastos_ordinarios gaor
         WHERE gaor.id_expensa = e.id_expensa
           AND gaor.id_tipo_gasto = t.id_tipo_gasto
     );
@@ -447,7 +447,7 @@ END
 GO
 
 /* --- IMPORTA UNIDADES FUNCIONALES (UF por consorcio.txt) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_importar_uf_por_consorcios
+CREATE OR ALTER PROCEDURE consorcios.sp_importar_uf_por_consorcios
     @ruta_archivo NVARCHAR(4000)
 AS
 BEGIN
@@ -503,7 +503,7 @@ BEGIN
     PRINT 'Insertando datos en la tabla final.';
 
     -- Se importan las unidades funcionales en la tabla final
-    INSERT INTO ddbba.unidad_funcional (
+    INSERT INTO consorcios.unidad_funcional (
         id_unidad_funcional, id_consorcio, metros_cuadrados, piso, departamento, cochera, baulera, coeficiente
     )
     SELECT
@@ -519,11 +519,11 @@ BEGIN
         TRY_CAST(REPLACE(ISNULL(t.coeficiente,'0'), ',', '.') AS DECIMAL(6,3))
     FROM #temp_UF AS t
     -- Se realiza junta con la tabla de consorcios utilizando el campo de nombre
-    INNER JOIN ddbba.consorcio AS c
+    INNER JOIN consorcios.consorcio AS c
         ON LTRIM(RTRIM(UPPER(c.nombre))) = LTRIM(RTRIM(UPPER(t.nom_consorcio)))
     -- Se verifica que no existe aun una unidad funcional que tenga el mismo ID y pertenezca al mismo consorcio. (Control de insercion de duplicados)
     WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.unidad_funcional uf
+        SELECT 1 FROM consorcios.unidad_funcional uf
         WHERE uf.id_consorcio = c.id_consorcio
           AND uf.id_unidad_funcional = t.num_UF
     );
@@ -537,7 +537,7 @@ END
 GO
 
 /* --- RELACIONA INQUILINOS CON UNIDADES FUNCIONALES (Inquilino-propietarios-UF.csv) --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_inquilinos_uf
+CREATE OR ALTER PROCEDURE personas.sp_relacionar_inquilinos_uf
     @ruta_archivo VARCHAR(4000)
 AS
 BEGIN
@@ -592,7 +592,7 @@ BEGIN
 
 
     -- Se insertan las personas en la tabla de roles
-    INSERT INTO ddbba.rol
+    INSERT INTO personas.rol
         (id_unidad_funcional, id_consorcio, nombre_rol, nro_documento, 
          tipo_documento, activo, fecha_inicio)
     SELECT
@@ -605,14 +605,14 @@ BEGIN
         GETDATE()
     FROM ##InquilinosUFTemp iuf
     JOIN ##InquilinosTemp_global g ON g.CVU_CBU = iuf.CVU_CBU -- Se asocia la persona con la uf segun el CBU
-    JOIN ddbba.persona p ON p.nro_documento = g.DNI 
-    JOIN ddbba.consorcio c ON c.nombre = iuf.nombre_consorcio -- Se busca el id de consorcio segun el nombre
-    JOIN ddbba.unidad_funcional uf 
+    JOIN personas.persona p ON p.nro_documento = g.DNI 
+    JOIN consorcios.consorcio c ON c.nombre = iuf.nombre_consorcio -- Se busca el id de consorcio segun el nombre
+    JOIN consorcios.unidad_funcional uf 
          ON uf.id_consorcio = c.id_consorcio
         AND uf.id_unidad_funcional = iuf.id_unidad_funcional
     WHERE NOT EXISTS ( -- Se verifica que no exista aun un rol que tenga la misma uf, documento, tipo, mismo rol y que este activo.
         SELECT 1
-        FROM ddbba.rol r
+        FROM personas.rol r
         WHERE r.id_unidad_funcional = uf.id_unidad_funcional
           AND r.nro_documento = p.nro_documento
           AND r.tipo_documento = p.tipo_documento
@@ -625,7 +625,7 @@ END;
 GO
 
 /* --- RELACIONA PAGOS CON UNIDAD FUNCIONAL --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_relacionar_pagos
+CREATE OR ALTER PROCEDURE finanzas.sp_relacionar_pagos
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -641,13 +641,13 @@ BEGIN
     DELETE FROM C WHERE rn > 1;
 
     -- Se insertan los pagos utilizando los datos de las tablas temporales ##temp_pagos y ##InquilinosUFTemp (STAGING) 
-    INSERT INTO ddbba.pago (id_pago, fecha_pago, monto, 
+    INSERT INTO finanzas.pago (id_pago, fecha_pago, monto, 
                             cbu_origen, estado, id_unidad_funcional,   
                             id_consorcio, id_expensa)
     SELECT 
         tp.id_pago,
         tp.fecha,
-        ddbba.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto, 
+        utils.fn_limpiar_espacios(REPLACE(REPLACE(valor, '.', ''), '$', '')) AS monto, 
         tp.cbu, 
         'asociado',
         uf.id_unidad_funcional, 
@@ -655,24 +655,24 @@ BEGIN
         UltimaExpensa.id_expensa 
     FROM ##temp_pagos AS tp
     INNER JOIN ##InquilinosUFTemp AS iuf ON tp.cbu = iuf.CVU_CBU -- Se busca la fila donde coincida CBU de inquilino en (##InquilinosUFTemp) con cbu del pago
-    INNER JOIN ddbba.consorcio AS c ON c.nombre = iuf.nombre_consorcio -- Se busca el consorcio al que pertenece la UF del pago
-    INNER JOIN ddbba.unidad_funcional AS uf ON uf.id_consorcio = c.id_consorcio AND uf.departamento = iuf.depto and uf.piso = iuf.piso
+    INNER JOIN consorcios.consorcio AS c ON c.nombre = iuf.nombre_consorcio -- Se busca el consorcio al que pertenece la UF del pago
+    INNER JOIN consorcios.unidad_funcional AS uf ON uf.id_consorcio = c.id_consorcio AND uf.departamento = iuf.depto and uf.piso = iuf.piso
     CROSS APPLY (
         -- Busca la expensa más reciente PARA ESE CONSORCIO que se haya emitido ANTES O EL MISMO DÍA del pago.
         SELECT TOP 1 e.id_expensa
-        FROM ddbba.expensa AS e
+        FROM finanzas.expensa AS e
         WHERE e.id_consorcio = c.id_consorcio AND e.fecha_emision <= tp.fecha
         ORDER BY e.fecha_emision DESC
     ) AS UltimaExpensa
     -- Control de insercion de duplicados. No puede existir ya en la tabla un registro con el mismo id. 
     WHERE NOT EXISTS (
-        SELECT 1 FROM ddbba.pago p WHERE p.id_pago = tp.id_pago
+        SELECT 1 FROM finanzas.pago p WHERE p.id_pago = tp.id_pago
     );
 END
 GO
 
 /* ---  GENERA PRORRATEO --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_actualizar_prorrateo
+CREATE OR ALTER PROCEDURE consorcios.sp_actualizar_prorrateo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -680,10 +680,10 @@ BEGIN
 
     UPDATE uf
     SET uf.prorrateo = ROUND((CAST(uf.metros_cuadrados AS FLOAT) / tot.total_m2) * 100, 2)
-    FROM ddbba.unidad_funcional AS uf
+    FROM consorcios.unidad_funcional AS uf
     INNER JOIN (
         SELECT id_consorcio, SUM(metros_cuadrados) AS total_m2
-        FROM ddbba.unidad_funcional
+        FROM consorcios.unidad_funcional
         GROUP BY id_consorcio
     ) AS tot
         ON uf.id_consorcio = tot.id_consorcio;
@@ -693,14 +693,14 @@ BEGIN
 END
 GO
 
-create or alter procedure ddbba.sp_actualizar_cbu_uf
+create or alter procedure consorcios.sp_actualizar_cbu_uf
 as
 begin
     PRINT 'Actualizando CBU en unidad_funcional...';
 
     UPDATE uf
     SET uf.cbu = itg.CVU_CBU
-    FROM ddbba.unidad_funcional uf
+    FROM consorcios.unidad_funcional uf
     INNER JOIN ##InquilinosUFTemp iuf ON uf.id_consorcio = uf.id_consorcio AND uf.departamento = iuf.depto  AND uf.piso = iuf.piso
     INNER JOIN ##InquilinosTemp_global itg on itg.CVU_CBU = iuf.CVU_CBU
 
@@ -709,19 +709,19 @@ end
 go
 
 /* --- EJECUTA TODOS LOS SP PARA IMPORTAR ARCHIVOS --- */
-create or alter procedure ddbba.sp_importar_archivos
+create or alter procedure utils.sp_importar_archivos
 as
 begin	
-	exec ddbba.sp_importar_consorcios @ruta_archivo = 'C:\Archivos para el tp\datos varios.xlsx'
-	exec ddbba.sp_importar_proveedores @ruta_archivo ='C:\Archivos para el tp\datos varios.xlsx' 
-	exec ddbba.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el tp\pagos_consorcios.csv'
-	exec ddbba.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Archivos para el tp\UF por consorcio.txt' 
-	exec ddbba.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-datos.csv'
-	exec ddbba.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el tp\Servicios.Servicios.json', @anio=2025
-    exec ddbba.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-UF.csv'
-    exec ddbba.sp_actualizar_cbu_uf
-	exec ddbba.sp_relacionar_pagos
-	exec ddbba.sp_actualizar_prorrateo
+	exec consorcios.sp_importar_consorcios @ruta_archivo = 'C:\Archivos para el tp\datos varios.xlsx'
+	exec personas.sp_importar_proveedores @ruta_archivo ='C:\Archivos para el tp\datos varios.xlsx' 
+	exec finanzas.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el tp\pagos_consorcios.csv'
+	exec consorcios.sp_importar_uf_por_consorcios @ruta_archivo = 'C:\Archivos para el tp\UF por consorcio.txt' 
+	exec personas.sp_importar_inquilinos_propietarios @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-datos.csv'
+	exec finanzas.sp_importar_servicios @ruta_archivo = 'C:\Archivos para el tp\Servicios.Servicios.json', @anio=2025
+    exec personas.sp_relacionar_inquilinos_uf @ruta_archivo = 'C:\Archivos para el tp\Inquilino-propietarios-UF.csv'
+    exec consorcios.sp_actualizar_cbu_uf
+	exec finanzas.sp_relacionar_pagos
+	exec consorcios.sp_actualizar_prorrateo
 end
 go
 

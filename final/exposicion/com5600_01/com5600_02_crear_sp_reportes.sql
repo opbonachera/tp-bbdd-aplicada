@@ -25,7 +25,7 @@ GO
             - Promedio en el periodo
             - Acumulado progresivo
 --- */
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_1
+CREATE OR ALTER PROCEDURE datos.sp_reporte_1
     @id_consorcio INT = NULL, 
     @anio_desde INT = NULL,   
     @anio_hasta INT = NULL
@@ -53,8 +53,8 @@ BEGIN
             SELECT
                 p.id_pago, p.monto, p.fecha_pago,
                 YEAR(p.fecha_pago) AS anio, DATEPART(WEEK, p.fecha_pago) AS semana
-            FROM ddbba.pago p
-            LEFT JOIN ddbba.expensa e ON e.id_expensa = p.id_expensa
+            FROM finanzas.pago p
+            LEFT JOIN finanzas.expensa e ON e.id_expensa = p.id_expensa
             ' + @where + N'
         ),
         TotalSemanal AS (
@@ -85,7 +85,7 @@ GO
     Reporte 2
         Presente el total de recaudación por mes y departamento en formato de tabla cruzada. 
 */
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_2
+CREATE OR ALTER PROCEDURE datos.sp_reporte_2
     @min  DECIMAL(12,2) = NULL, 
     @max  DECIMAL(12,2) = NULL,
     @anio INT = NULL
@@ -117,7 +117,7 @@ BEGIN
                  )
     FROM (
         SELECT DISTINCT departamento
-        FROM ddbba.unidad_funcional
+        FROM consorcios.unidad_funcional
     ) AS d;
 
     -- Se construye el SQL dinamico con los filtros generados previamente
@@ -127,8 +127,8 @@ BEGIN
                 FORMAT(p.fecha_pago, ''yyyy-MM'') AS mes, 
                 REPLACE(LTRIM(RTRIM(uf.departamento)), '' '', ''_'') AS departamento,
                 SUM(p.monto) AS total_monto
-            FROM ddbba.pago p
-            JOIN ddbba.unidad_funcional uf  
+            FROM finanzas.pago p
+            JOIN consorcios.unidad_funcional uf  
                 ON uf.id_unidad_funcional = p.id_unidad_funcional
             ' + @where + N'
             GROUP BY FORMAT(p.fecha_pago, ''yyyy-MM''), 
@@ -169,7 +169,7 @@ EXEC sp_configure 'Ole Automation Procedures', 1;	--Habilitamos esta opcion avan
 RECONFIGURE;
 GO
 
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_3
+CREATE OR ALTER PROCEDURE datos.sp_reporte_3
     @FechaDesde DATE = NULL,
     @FechaHasta DATE = NULL,
     @IdConsorcio INT = NULL
@@ -233,8 +233,8 @@ BEGIN
             FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
             'Ordinario' AS Tipo,
             gaor.importe AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gastos_ordinarios gaor 
+        FROM finanzas.expensa e
+        INNER JOIN finanzas.gastos_ordinarios gaor 
             ON e.id_expensa = gaor.id_expensa
         WHERE 
             (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
@@ -250,8 +250,8 @@ BEGIN
             FORMAT(e.fecha_emision, 'yyyy-MM') AS Periodo,
             'Extraordinario' AS Tipo,
             ge.importe_total AS Importe
-        FROM ddbba.expensa e
-        INNER JOIN ddbba.gasto_extraordinario ge 
+        FROM finanzas.expensa e
+        INNER JOIN finanzas.gasto_extraordinario ge 
             ON e.id_expensa = ge.id_expensa
         WHERE 
             (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
@@ -297,7 +297,7 @@ GO
     Reporte 4. 
         Obtenga los 5 (cinco) meses de mayores gastos y los 5 (cinco) de mayores ingresos. 
 */
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_4
+CREATE OR ALTER PROCEDURE datos.sp_reporte_4
     @id_consorcio INT = NULL,  -- filtrar por consorcio
     @AnioDesde INT = NULL,     -- año desde
     @AnioHasta INT = NULL      --  año hasta
@@ -323,8 +323,8 @@ BEGIN
             gor.importe AS Monto,
             'Ordinario' AS TipoGasto,
             e.id_consorcio
-        FROM ddbba.gastos_ordinarios gor
-        INNER JOIN ddbba.expensa e ON gor.id_expensa = e.id_expensa
+        FROM finanzas.gastos_ordinarios gor
+        INNER JOIN finanzas.expensa e ON gor.id_expensa = e.id_expensa
         WHERE 
             (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
             AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
@@ -338,8 +338,8 @@ BEGIN
             ge.importe_total AS Monto,
             'Extraordinario' AS TipoGasto,
             e.id_consorcio
-        FROM ddbba.gasto_extraordinario ge
-        INNER JOIN ddbba.expensa e ON ge.id_expensa = e.id_expensa
+        FROM finanzas.gasto_extraordinario ge
+        INNER JOIN finanzas.expensa e ON ge.id_expensa = e.id_expensa
         WHERE 
             (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
             AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
@@ -384,7 +384,7 @@ BEGIN
             SUM(p.monto) AS TotalIngresos,
             COUNT(*) AS CantidadPagos,
             COUNT(DISTINCT p.id_unidad_funcional) AS UnidadesPagaron
-        FROM ddbba.pago p
+        FROM finanzas.pago p
         WHERE 
             p.estado = 'Aprobado'
             AND (@id_consorcio IS NULL OR p.id_consorcio = @id_consorcio)
@@ -419,7 +419,7 @@ GO
         DNI de los propietarios para que la administración los pueda contactar o remitir el trámite al
         estudio jurídico.
 */
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_5
+CREATE OR ALTER PROCEDURE datos.sp_reporte_5
     @id_consorcio INT = NULL,
     @fecha_desde DATE = NULL,
     @fecha_hasta DATE = NULL,
@@ -435,18 +435,18 @@ BEGIN
         p.mail,
         p.telefono,
         SUM(ISNULL(depuf.deuda, 0)) AS total_deuda
-    FROM ddbba.persona p
-    INNER JOIN ddbba.rol r
+    FROM personas.persona p
+    INNER JOIN personas.rol r
         ON p.nro_documento = r.nro_documento
         AND p.tipo_documento = r.tipo_documento
         AND r.nombre_rol = 'Propietario'
-    INNER JOIN ddbba.unidad_funcional uf
+    INNER JOIN consorcios.unidad_funcional uf
         ON r.id_unidad_funcional = uf.id_unidad_funcional
         AND r.id_consorcio = uf.id_consorcio
-    INNER JOIN ddbba.detalle_expensas_por_uf depuf
+    INNER JOIN finanzas.detalle_expensas_por_uf depuf
         ON uf.id_unidad_funcional = depuf.id_unidad_funcional
         AND uf.id_consorcio = depuf.id_consorcio
-    INNER JOIN ddbba.expensa e
+    INNER JOIN finanzas.expensa e
         ON depuf.id_expensa = e.id_expensa
     WHERE (@id_consorcio IS NULL OR uf.id_consorcio = @id_consorcio)
       AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
@@ -470,7 +470,7 @@ GO
 
 */
 
-CREATE OR ALTER PROCEDURE ddbba.sp_reporte_6
+CREATE OR ALTER PROCEDURE datos.sp_reporte_6
     @id_unidad_funcional INT = NULL,
     @fecha_desde DATE = NULL,
     @fecha_hasta DATE = NULL
@@ -483,10 +483,10 @@ BEGIN
             p.id_unidad_funcional,
             p.id_expensa,
             CAST(p.fecha_pago AS DATE) AS fecha_pago
-        FROM ddbba.pago p
-        INNER JOIN ddbba.expensa e ON p.id_expensa = e.id_expensa
-        INNER JOIN ddbba.gastos_ordinarios go ON e.id_expensa = go.id_expensa
-        INNER JOIN ddbba.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
+        FROM finanzas.pago p
+        INNER JOIN finanzas.expensa e ON p.id_expensa = e.id_expensa
+        INNER JOIN finanzas.gastos_ordinarios go ON e.id_expensa = go.id_expensa
+        INNER JOIN consorcios.unidad_funcional uf ON p.id_unidad_funcional = uf.id_unidad_funcional
         WHERE
             (@id_unidad_funcional IS NULL OR p.id_unidad_funcional = @id_unidad_funcional)
             AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)

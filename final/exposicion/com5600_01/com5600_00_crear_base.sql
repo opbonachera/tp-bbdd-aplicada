@@ -11,67 +11,70 @@
               Guardia Gabriel — 42364065
               Perez, Olivia Constanza — 46641730
 ----------------------------------------------------------*/
-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  INICIO DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-USE Com5600_Grupo01;
+IF DB_ID('Com5600_Grupo01') IS NOT NULL
+BEGIN
+    USE Com5600_Grupo01;
+END
 GO
+
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  ELIMINACION DE BASE DE DATOS Y OBJETOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
 /*--- Eliminación de índices ---*/
-DROP INDEX IF EXISTS IX_pago_fecha_unidad_monto ON ddbba.pago;
-DROP INDEX IF EXISTS IX_unidad_funcional_departamento ON ddbba.unidad_funcional;
-DROP INDEX IF EXISTS IX_expensa_consorcio_fecha ON ddbba.expensa;
-DROP INDEX IF EXISTS IX_gastos_ordinarios_expensa ON ddbba.gastos_ordinarios;
-DROP INDEX IF EXISTS IX_gasto_extraordinario_expensa ON ddbba.gasto_extraordinario;
-DROP INDEX IF EXISTS IX_pago_consorcio_fecha_estado ON ddbba.pago;
-DROP INDEX IF EXISTS IX_detalle_expensas_por_uf_unidad_consorcio_expensa ON ddbba.detalle_expensas_por_uf;
-DROP INDEX IF EXISTS IX_expensa_fecha_emision ON ddbba.expensa;
-DROP INDEX IF EXISTS IX_rol_propietario ON ddbba.rol;
-DROP INDEX IF EXISTS IX_unidad_funcional_consorcio ON ddbba.unidad_funcional;
-DROP INDEX IF EXISTS IX_persona_documento ON ddbba.persona;
-DROP INDEX IF EXISTS IX_pago_consorcio_uf_fecha ON ddbba.pago;
+DROP INDEX IF EXISTS IX_pago_fecha_unidad_monto ON finanzas.pago;
+DROP INDEX IF EXISTS IX_unidad_funcional_departamento ON consorcios.unidad_funcional;
+DROP INDEX IF EXISTS IX_expensa_consorcio_fecha ON finanzas.expensa;
+DROP INDEX IF EXISTS IX_gastos_ordinarios_expensa ON finanzas.gastos_ordinarios;
+DROP INDEX IF EXISTS IX_gasto_extraordinario_expensa ON finanzas.gasto_extraordinario;
+DROP INDEX IF EXISTS IX_pago_consorcio_fecha_estado ON finanzas.pago;
+DROP INDEX IF EXISTS IX_detalle_expensas_por_uf_unidad_consorcio_expensa ON finanzas.detalle_expensas_por_uf;
+DROP INDEX IF EXISTS IX_expensa_fecha_emision ON finanzas.expensa;
+DROP INDEX IF EXISTS IX_rol_propietario ON personas.rol;
+DROP INDEX IF EXISTS IX_unidad_funcional_consorcio ON consorcios.unidad_funcional;
+DROP INDEX IF EXISTS IX_persona_documento ON personas.persona;
+DROP INDEX IF EXISTS IX_pago_consorcio_uf_fecha ON finanzas.pago;
 GO
 
 /*--- Eliminación de funciones ---*/
-DROP FUNCTION IF EXISTS ddbba.fn_normalizar_monto;
-DROP FUNCTION IF EXISTS ddbba.fn_limpiar_espacios;
+DROP FUNCTION IF EXISTS utils.fn_normalizar_monto;
+DROP FUNCTION IF EXISTS utils.fn_limpiar_espacios;
 GO
 
 /*--- Eliminación de stored procedures ---*/
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_tipos_envio;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_envios_expensas;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_estado_financiero;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_gastos_extraordinarios;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_cuotas;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_pagos;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_vencimientos_expensas;
-DROP PROCEDURE IF EXISTS ddbba.sp_generar_detalle_expensas_por_uf;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_consorcios;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_proveedores;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_pagos;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_uf_por_consorcios;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_inquilinos_propietarios;
-DROP PROCEDURE IF EXISTS ddbba.sp_importar_servicios;
-DROP PROCEDURE IF EXISTS ddbba.sp_relacionar_inquilinos_uf;
-DROP PROCEDURE IF EXISTS ddbba.sp_relacionar_pagos;
-DROP PROCEDURE IF EXISTS ddbba.sp_actualizar_prorrateo;
+DROP PROCEDURE IF EXISTS utils.sp_generar_tipos_envio;
+DROP PROCEDURE IF EXISTS utils.sp_generar_envios_expensas;
+DROP PROCEDURE IF EXISTS utils.sp_generar_estado_financiero;
+DROP PROCEDURE IF EXISTS utils.sp_generar_gastos_extraordinarios;
+DROP PROCEDURE IF EXISTS utils.sp_generar_cuotas;
+DROP PROCEDURE IF EXISTS utils.sp_generar_pagos;
+DROP PROCEDURE IF EXISTS utils.sp_generar_vencimientos_expensas;
+DROP PROCEDURE IF EXISTS utils.sp_generar_detalle_expensas_por_uf;
+DROP PROCEDURE IF EXISTS consorcios.sp_importar_consorcios;
+DROP PROCEDURE IF EXISTS personas.sp_importar_proveedores;
+DROP PROCEDURE IF EXISTS finanzas.sp_importar_pagos;
+DROP PROCEDURE IF EXISTS consorcios.sp_importar_uf_por_consorcios;
+DROP PROCEDURE IF EXISTS personas.sp_importar_inquilinos_propietarios;
+DROP PROCEDURE IF EXISTS finanzas.sp_importar_servicios;
+DROP PROCEDURE IF EXISTS personas.sp_relacionar_inquilinos_uf;
+DROP PROCEDURE IF EXISTS finanzas.sp_relacionar_pagos;
+DROP PROCEDURE IF EXISTS utils.sp_actualizar_prorrateo;
 GO
 
 /*--- Eliminación de tablas ---*/
-DROP TABLE IF EXISTS ddbba.detalle_expensas_por_uf;
-DROP TABLE IF EXISTS ddbba.estado_financiero;
-DROP TABLE IF EXISTS ddbba.pago;
-DROP TABLE IF EXISTS ddbba.envio_expensa;
-DROP TABLE IF EXISTS ddbba.cuotas;
-DROP TABLE IF EXISTS ddbba.gasto_extraordinario;
-DROP TABLE IF EXISTS ddbba.gastos_ordinarios;
-DROP TABLE IF EXISTS ddbba.expensa;
-DROP TABLE IF EXISTS ddbba.rol;
-DROP TABLE IF EXISTS ddbba.unidad_funcional;
-DROP TABLE IF EXISTS ddbba.tipo_envio;
-DROP TABLE IF EXISTS ddbba.tipo_gasto;
-DROP TABLE IF EXISTS ddbba.persona;
-DROP TABLE IF EXISTS ddbba.proveedores;
-DROP TABLE IF EXISTS ddbba.consorcio;
+DROP TABLE IF EXISTS finanzas.detalle_expensas_por_uf;
+DROP TABLE IF EXISTS finanzas.estado_financiero;
+DROP TABLE IF EXISTS finanzas.pago;
+DROP TABLE IF EXISTS gestion.envio_expensa;
+DROP TABLE IF EXISTS finanzas.cuotas;
+DROP TABLE IF EXISTS finanzas.gasto_extraordinario;
+DROP TABLE IF EXISTS finanzas.gastos_ordinarios;
+DROP TABLE IF EXISTS finanzas.expensa;
+DROP TABLE IF EXISTS personas.rol;
+DROP TABLE IF EXISTS consorcios.unidad_funcional;
+DROP TABLE IF EXISTS gestion.tipo_envio;
+DROP TABLE IF EXISTS finanzas.tipo_gasto;
+DROP TABLE IF EXISTS personas.persona;
+DROP TABLE IF EXISTS personas.proveedores;
+DROP TABLE IF EXISTS consorcios.consorcio;
 GO
 
 /*--- Eliminación de base de datos ---*/
@@ -90,14 +93,25 @@ GO
 USE Com5600_Grupo01;
 GO
 
-/*--- Creación de esquema ---*/
-CREATE SCHEMA ddbba;
+/*--- Creación de esquemas lógicos ---*/
+CREATE SCHEMA consorcios; -- Objetos relacionados a los consorcios y las uf
 GO
-
+CREATE SCHEMA personas; --Objetos que manejan datos de personas
+GO
+CREATE SCHEMA finanzas; -- Objetos relacionados a la gestion financiera del consorcio
+GO
+CREATE SCHEMA gestion; -- Objetos relacionados a la gestion del consorcio ej. envío de expensas
+GO
+CREATE SCHEMA utils; -- Objetos que añaden funcionalidades extra, por ejemplo generar datos adicionales
+GO
+CREATE SCHEMA datos; -- Reportes
+GO
+CREATE SCHEMA seguridad; -- Objetos relacionados a la seguridad, roles y permisos
+GO
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE BASE DE DATOS <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-CREATE TABLE ddbba.consorcio (
+CREATE TABLE consorcios.consorcio (
     id_consorcio INT PRIMARY KEY IDENTITY(1,1),
     nombre VARCHAR(50),
     metros_cuadrados INT,
@@ -107,7 +121,7 @@ CREATE TABLE ddbba.consorcio (
 GO
 
 -- Tabla proveedores
-CREATE TABLE ddbba.proveedores (
+CREATE TABLE personas.proveedores (
     id_proveedores INT PRIMARY KEY IDENTITY(1,1),
     tipo_de_gasto VARCHAR(50),
     entidad VARCHAR(100),
@@ -117,7 +131,7 @@ CREATE TABLE ddbba.proveedores (
 GO
 
 -- Tabla persona
-CREATE TABLE ddbba.persona (
+CREATE TABLE personas.persona (
     nro_documento BIGINT,
     tipo_documento VARCHAR(10),
     nombre VARCHAR(50),
@@ -129,26 +143,26 @@ CREATE TABLE ddbba.persona (
 GO
 
 -- Tabla tipo_gasto
-CREATE TABLE ddbba.tipo_gasto (
+CREATE TABLE finanzas.tipo_gasto (
     id_tipo_gasto INT PRIMARY KEY IDENTITY(1,1),
     detalle VARCHAR(100)
 );
 GO
 
 -- Tabla tipo_envio
-CREATE TABLE ddbba.tipo_envio (
+CREATE TABLE gestion.tipo_envio (
     id_tipo_envio INT PRIMARY KEY IDENTITY(1,1),
     detalle VARCHAR(100)
 );
 GO
 
 -- Tabla unidad_funcional (PK compuesta)
-CREATE TABLE ddbba.unidad_funcional (
+CREATE TABLE consorcios.unidad_funcional (
     id_unidad_funcional INT NOT NULL,
     id_consorcio INT NOT NULL,
     metros_cuadrados INT,
-    piso VARCHAR(2),
-    departamento VARCHAR(10),
+    piso CHAR(2),
+    departamento CHAR(10),
     cochera BIT DEFAULT 0,
     baulera BIT DEFAULT 0,
     coeficiente FLOAT,
@@ -156,12 +170,12 @@ CREATE TABLE ddbba.unidad_funcional (
     cbu VARCHAR(30),
     prorrateo FLOAT DEFAULT 0,
     CONSTRAINT PK_unidad_funcional PRIMARY KEY (id_unidad_funcional, id_consorcio),
-    FOREIGN KEY (id_consorcio) REFERENCES ddbba.consorcio(id_consorcio) ON DELETE CASCADE
+    FOREIGN KEY (id_consorcio) REFERENCES consorcios.consorcio(id_consorcio) ON DELETE CASCADE
 );
 GO
 
 -- Tabla rol
-CREATE TABLE ddbba.rol (
+CREATE TABLE personas.rol (
     id_rol INT PRIMARY KEY IDENTITY(1,1),
     id_unidad_funcional INT NOT NULL,
     id_consorcio INT NOT NULL,
@@ -172,59 +186,59 @@ CREATE TABLE ddbba.rol (
     fecha_inicio DATE,
     fecha_fin DATE,
     FOREIGN KEY (id_unidad_funcional, id_consorcio) 
-        REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio) ON DELETE CASCADE,
+        REFERENCES consorcios.unidad_funcional(id_unidad_funcional, id_consorcio) ON DELETE CASCADE,
     FOREIGN KEY (nro_documento, tipo_documento) 
-        REFERENCES ddbba.persona(nro_documento, tipo_documento) ON DELETE CASCADE
+        REFERENCES personas.persona(nro_documento, tipo_documento) ON DELETE CASCADE
 );
 GO
 
 -- Tabla expensa
-CREATE TABLE ddbba.expensa (
+CREATE TABLE finanzas.expensa (
     id_expensa INT PRIMARY KEY IDENTITY(1,1),
     id_consorcio INT NOT NULL,
     fecha_emision DATE,
     primer_vencimiento DATE,
     segundo_vencimiento DATE,
-    FOREIGN KEY (id_consorcio) REFERENCES ddbba.consorcio(id_consorcio) ON DELETE CASCADE
+    FOREIGN KEY (id_consorcio) REFERENCES consorcios.consorcio(id_consorcio) ON DELETE CASCADE
 );
 GO
 
 -- Tabla gastos_ordinarios
-CREATE TABLE ddbba.gastos_ordinarios (
+CREATE TABLE finanzas.gastos_ordinarios (
     id_gasto_ordinario INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT,
     id_tipo_gasto INT,
     detalle VARCHAR(200),
     nro_factura VARCHAR(50),
     importe decimal(12,3),
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
-    FOREIGN KEY (id_tipo_gasto) REFERENCES ddbba.tipo_gasto(id_tipo_gasto)
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa) ON DELETE CASCADE,
+    FOREIGN KEY (id_tipo_gasto) REFERENCES finanzas.tipo_gasto(id_tipo_gasto)
 );
 GO
 
 -- Tabla gasto_extraordinario
-CREATE TABLE ddbba.gasto_extraordinario (
+CREATE TABLE finanzas.gasto_extraordinario (
     id_gasto_extraordinario INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT,
     detalle VARCHAR(200),
     total_cuotas INT DEFAULT 1,
     pago_en_cuotas BIT DEFAULT 0,
     importe_total decimal(12,3),
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa) ON DELETE CASCADE
 );
 GO
 
 -- Tabla cuotas
-CREATE TABLE ddbba.cuotas (
+CREATE TABLE finanzas.cuotas (
     id_gasto_extraordinario INT,
     nro_cuota INT,
     PRIMARY KEY (id_gasto_extraordinario, nro_cuota),
-    FOREIGN KEY (id_gasto_extraordinario) REFERENCES ddbba.gasto_extraordinario(id_gasto_extraordinario) ON DELETE CASCADE
+    FOREIGN KEY (id_gasto_extraordinario) REFERENCES finanzas.gasto_extraordinario(id_gasto_extraordinario) ON DELETE CASCADE
 );
 GO
 
 -- Tabla envio_expensa
-CREATE TABLE ddbba.envio_expensa (
+CREATE TABLE gestion.envio_expensa (
     id_envio INT PRIMARY KEY IDENTITY(1,1),
     id_expensa INT NOT NULL,
     id_unidad_funcional INT NOT NULL,
@@ -233,17 +247,17 @@ CREATE TABLE ddbba.envio_expensa (
     destinatario_nro_documento BIGINT,
     destinatario_tipo_documento VARCHAR(10),
     fecha_envio DATETIME,
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
-    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio),
-    FOREIGN KEY (id_tipo_envio) REFERENCES ddbba.tipo_envio(id_tipo_envio),
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa) ON DELETE CASCADE,
+    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES consorcios.unidad_funcional(id_unidad_funcional, id_consorcio),
+    FOREIGN KEY (id_tipo_envio) REFERENCES gestion.tipo_envio(id_tipo_envio),
     FOREIGN KEY (destinatario_nro_documento, destinatario_tipo_documento) 
-        REFERENCES ddbba.persona(nro_documento, tipo_documento) ON DELETE CASCADE
+        REFERENCES personas.persona(nro_documento, tipo_documento) ON DELETE CASCADE
 );
 GO
 
 -- Tabla pago
 
-CREATE TABLE ddbba.pago (
+CREATE TABLE finanzas.pago (
     id_pago INT PRIMARY KEY,
     id_unidad_funcional INT,
     id_consorcio INT,
@@ -252,13 +266,13 @@ CREATE TABLE ddbba.pago (
     monto decimal(12,3),
     cbu_origen VARCHAR(30),
     estado VARCHAR(30),
-    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio) ON DELETE CASCADE,
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa)
+    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES consorcios.unidad_funcional(id_unidad_funcional, id_consorcio) ON DELETE CASCADE,
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa)
 );
 GO
 
 -- Tabla estado_financiero
-CREATE TABLE ddbba.estado_financiero (
+CREATE TABLE finanzas.estado_financiero (
     id_expensa INT PRIMARY KEY,
     saldo_anterior decimal(12,3),
     ingresos_en_termino decimal(12,3),
@@ -266,12 +280,12 @@ CREATE TABLE ddbba.estado_financiero (
     ingresos_adeudados decimal(12,3),
     egresos_del_mes decimal(12,3),
     saldo_cierre decimal(12,3),
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa) ON DELETE CASCADE
 );
 GO
 
 -- Tabla detalle_expensas_por_uf
-CREATE TABLE ddbba.detalle_expensas_por_uf (
+CREATE TABLE finanzas.detalle_expensas_por_uf (
     id_detalle INT NOT NULL,
     id_expensa INT NOT NULL,
     id_unidad_funcional INT NOT NULL,
@@ -282,15 +296,14 @@ CREATE TABLE ddbba.detalle_expensas_por_uf (
     interes_mora INT,
     monto_total INT,
     PRIMARY KEY (id_detalle, id_expensa, id_unidad_funcional, id_consorcio),
-    FOREIGN KEY (id_expensa) REFERENCES ddbba.expensa(id_expensa) ON DELETE CASCADE,
-    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES ddbba.unidad_funcional(id_unidad_funcional, id_consorcio)
+    FOREIGN KEY (id_expensa) REFERENCES finanzas.expensa(id_expensa) ON DELETE CASCADE,
+    FOREIGN KEY (id_unidad_funcional, id_consorcio) REFERENCES consorcios.unidad_funcional(id_unidad_funcional, id_consorcio)
 );
 GO
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
+CREATE OR ALTER FUNCTION utils.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
 BEGIN
@@ -307,7 +320,7 @@ BEGIN
     DECLARE @tieneSeparador BIT;
 
     -- 1) Limpiamos caracteres no deseados
-    SET @resultado = ddbba.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
+    SET @resultado = utils.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
     SET @resultado = REPLACE(@resultado, '$', ''); --Saca el $ (si lo tuviese)
 
     -- 2) Detectamos si tiene separador decimal
@@ -331,8 +344,7 @@ BEGIN
 END
 GO
 
-
-CREATE OR ALTER FUNCTION ddbba.fn_limpiar_espacios (@valor VARCHAR(MAX))
+CREATE OR ALTER FUNCTION utils.fn_limpiar_espacios (@valor VARCHAR(MAX))
 RETURNS VARCHAR(MAX)
 AS
 BEGIN
@@ -349,5 +361,4 @@ BEGIN
 END
 GO
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DEL SCRIPT <<<<<<<<<<<<<<<<<<<<<<<<<<*/

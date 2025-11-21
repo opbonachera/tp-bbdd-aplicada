@@ -5,17 +5,17 @@
  Fecha:       2025-01-01
  Descripcion: Creacion de objetos relacionados a la seguridad del cifrado.
               NOTA: para que funcione el script correctamente se debe respetar el orden de la
-              creación indicado por los bloques. 
+              creaciï¿½n indicado por los bloques. 
               1. Seleccionar y ejecutar bloque 1
               2. Ejecutar SP creado en el bloque 1
               3. Seleccionar y ejecutar bloque 2
               4. Seleccionar y ejecutar bloque 3
- Integrantes: Arcón Wogelman, Nazareno — 44792096
-              Arriola Santiago — 41743980 
-              Bonachera Ornella — 46119546
-              Benitez Jimena — 46097948
-              Guardia Gabriel — 42364065
-              Perez, Olivia Constanza — 46641730
+ Integrantes: Arcï¿½n Wogelman, Nazareno ï¿½ 44792096
+              Arriola Santiago ï¿½ 41743980 
+              Bonachera Ornella ï¿½ 46119546
+              Benitez Jimena ï¿½ 46097948
+              Guardia Gabriel ï¿½ 42364065
+              Perez, Olivia Constanza ï¿½ 46641730
 ----------------------------------------------------------*/
 
 /*>>>>>>>>>>>>>>>>>>>>>>>> INICIO DEL SCRIPT  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */
@@ -276,6 +276,12 @@ GO
 GRANT INSERT, DELETE, UPDATE, SELECT 
 ON consorcios.unidad_funcional 
 TO rol_administrativo_general, rol_administrativo_operativo;
+GO
+
+-- Permisos sobre tabla de pagos
+GRANT INSERT, DELETE, UPDATE, SELECT 
+ON finanzas.pagos
+TO rol_administrativo_bancario
 GO
 
 -- Procedimientos de mantenimiento
