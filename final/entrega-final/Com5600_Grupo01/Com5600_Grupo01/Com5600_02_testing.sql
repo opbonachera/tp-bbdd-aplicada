@@ -42,7 +42,7 @@ go
 exec utils.sp_importar_archivos
 go
 
-
+select * from finanzas.pago
 exec consorcios.sp_importar_consorcios @ruta_archivo = 'C:\Archivos para el tp\datos varios.xlsx'
 exec personas.sp_importar_proveedores @ruta_archivo ='C:\Archivos para el tp\datos varios.xlsx' 
 exec finanzas.sp_importar_pagos @ruta_archivo = 'C:\Archivos para el tp\pagos_consorcios.csv'
@@ -104,12 +104,12 @@ exec datos.sp_reporte_2 @anio=2024
 exec datos.sp_reporte_3;
 -- Con parametros de fecha
 exec datos.sp_reporte_3 
-    @FechaDesde = '2025-01-01',
-    @FechaHasta = '2025-04-30';
+    @fecha_desde = '2025-01-01',
+    @fecha_hasta = '2025-04-30';
 
 -- Con ID de consorcio
 exec datos.sp_reporte_3 
-    @IdConsorcio = 2
+    @id_consorcio = 2
 
 
 -- REPORTE 4: Obtener 5 meses de mayores gastos y 5 de mayores ingresos.
@@ -120,9 +120,9 @@ EXEC datos.sp_reporte_4;
 -- Mandadole un consorcio
 EXEC datos.sp_reporte_4 @id_consorcio = 5; 
 -- Mandadole años
-EXEC datos.sp_reporte_4 @AnioDesde = 2025, @AnioHasta = 2025; 
+EXEC datos.sp_reporte_4 @anio_desde = 2025, @AnioHasta = 2025; 
 -- Mandadole todos los parametros
-EXEC datos.sp_reporte_4 @id_consorcio = 1, @AnioDesde = 2025, @AnioHasta = 2025;
+EXEC datos.sp_reporte_4 @id_consorcio = 1, @anio_desde = 2025, @AnioHasta = 2025;
 
 --REPORTE 5: Obtener 3 propietarios mas morosos.
 --Parametros: rango de fechas, id del consorcio

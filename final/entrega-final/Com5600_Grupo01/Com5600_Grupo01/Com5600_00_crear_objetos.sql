@@ -20,6 +20,8 @@ GO
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  ELIMINACION DE BASE DE DATOS Y OBJETOS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
+
+
 /*--- Eliminación de índices ---*/
 DROP INDEX IF EXISTS IX_pago_fecha_unidad_monto ON finanzas.pago;
 DROP INDEX IF EXISTS IX_unidad_funcional_departamento ON consorcios.unidad_funcional;
@@ -304,7 +306,7 @@ GO
 
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN DE CREACION DE TABLAS  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  CREACION DE FUNCIONES <<<<<<<<<<<<<<<<<<<<<<<<<<*/
-CREATE OR ALTER FUNCTION ddbba.fn_normalizar_monto (@valor VARCHAR(50))
+CREATE OR ALTER FUNCTION utils.fn_normalizar_monto (@valor VARCHAR(50))
 RETURNS DECIMAL(12,2)
 AS
 BEGIN
@@ -321,7 +323,7 @@ BEGIN
     DECLARE @tieneSeparador TINYINT;
 
     -- 1) Limpiamos caracteres no deseados
-    SET @resultado = ddbba.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
+    SET @resultado = utils.fn_limpiar_espacios(LTRIM(RTRIM(ISNULL(@valor, '')))); --Borra espacios izq, der y entre medio
     SET @resultado = REPLACE(@resultado, '$', ''); --Saca el $ (si lo tuviese)
 
     -- 2) Detectamos si tiene separador decimal
@@ -1228,9 +1230,9 @@ RECONFIGURE;
 GO
 
 CREATE OR ALTER PROCEDURE datos.sp_reporte_3
-    @FechaDesde DATE = NULL,
-    @FechaHasta DATE = NULL,
-    @IdConsorcio INT = NULL
+    @fecha_desde DATE = NULL,
+    @fecha_hasta DATE = NULL,
+    @id_consorcio INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1295,9 +1297,9 @@ BEGIN
         INNER JOIN finanzas.gasto_ordinario gaor 
             ON e.id_expensa = gaor.id_expensa
         WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
+            (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
+            AND (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
 
         UNION ALL
 
@@ -1312,9 +1314,9 @@ BEGIN
         INNER JOIN finanzas.gasto_extraordinario ge 
             ON e.id_expensa = ge.id_expensa
         WHERE 
-            (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
-            AND (@IdConsorcio IS NULL OR e.id_consorcio = @IdConsorcio)
+            (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
+            AND (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
     )
 
     --Consulta final con los valores desagregados a mostrar
@@ -1357,20 +1359,20 @@ GO
 */
 CREATE OR ALTER PROCEDURE datos.sp_reporte_4
     @id_consorcio INT = NULL,  -- filtrar por consorcio
-    @AnioDesde INT = NULL,     -- año desde
+    @anio_desde INT = NULL,     -- año desde
     @AnioHasta INT = NULL      --  año hasta
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @FechaDesde DATE = NULL;
-    DECLARE @FechaHasta DATE = NULL;
+    DECLARE @fecha_desde DATE = NULL;
+    DECLARE @fecha_hasta DATE = NULL;
 
     -- Rango de fechas
-    IF @AnioDesde IS NOT NULL
-        SET @FechaDesde = DATEFROMPARTS(@AnioDesde, 1, 1);
+    IF @anio_desde IS NOT NULL
+        SET @fecha_desde = DATEFROMPARTS(@anio_desde, 1, 1);
     IF @AnioHasta IS NOT NULL
-        SET @FechaHasta = DATEFROMPARTS(@AnioHasta, 12, 31);
+        SET @fecha_hasta = DATEFROMPARTS(@AnioHasta, 12, 31);
 
 
     -- TOP 5 MESES CON MAYORES GASTOS (Ordinarios + Extraordinarios)
@@ -1385,8 +1387,8 @@ BEGIN
         INNER JOIN finanzas.expensa e ON gor.id_expensa = e.id_expensa
         WHERE 
             (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+            AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
 
         UNION ALL
 
@@ -1400,8 +1402,8 @@ BEGIN
         INNER JOIN finanzas.expensa e ON ge.id_expensa = e.id_expensa
         WHERE 
             (@id_consorcio IS NULL OR e.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR e.fecha_emision >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR e.fecha_emision <= @FechaHasta)
+            AND (@fecha_desde IS NULL OR e.fecha_emision >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR e.fecha_emision <= @fecha_hasta)
     ),
     GastosMensuales AS (
         SELECT 
@@ -1446,8 +1448,8 @@ BEGIN
         WHERE 
             p.estado = 'Aprobado'
             AND (@id_consorcio IS NULL OR p.id_consorcio = @id_consorcio)
-            AND (@FechaDesde IS NULL OR p.fecha_pago >= @FechaDesde)
-            AND (@FechaHasta IS NULL OR p.fecha_pago <= @FechaHasta)
+            AND (@fecha_desde IS NULL OR p.fecha_pago >= @fecha_desde)
+            AND (@fecha_hasta IS NULL OR p.fecha_pago <= @fecha_hasta)
         GROUP BY 
             YEAR(p.fecha_pago),
             MONTH(p.fecha_pago),
@@ -1599,7 +1601,7 @@ BEGIN
     DECLARE @i INT = 1;
     DECLARE @id_expensa INT;
     DECLARE @id_uf INT;
-    DECLARE @IdConsorcio INT;
+    DECLARE @id_consorcio INT;
     DECLARE @IdTipo INT;
     DECLARE @TipoDoc VARCHAR(10);
     DECLARE @Documento BIGINT;
@@ -1612,7 +1614,7 @@ BEGIN
         SET @IdTipo = (SELECT TOP 1 id_tipo_envio FROM gestion.tipo_envio ORDER BY NEWID());
         SELECT TOP 1 
 			  @id_uf = id_unidad_funcional,
-			  @IdConsorcio = id_consorcio
+			  @id_consorcio = id_consorcio
 	   FROM consorcios.unidad_funcional 
        ORDER BY NEWID();
         
@@ -1638,7 +1640,7 @@ BEGIN
         VALUES (
             @id_expensa, 
             @id_uf, 
-            @IdConsorcio,
+            @id_consorcio,
             @IdTipo, 
             @Documento, 
             @TipoDoc, 
@@ -1706,26 +1708,26 @@ BEGIN
     SET NOCOUNT ON;
     
     DECLARE @i INT = 1;
-    DECLARE @IdPago INT;
+    DECLARE @id_pago INT;
     DECLARE @id_uf INT;
-    DECLARE @IdConsorcio INT;
+    DECLARE @id_consorcio INT;
     DECLARE @id_expensa INT;
     DECLARE @Fecha DATE;
     DECLARE @Monto DECIMAL(18,2);
-    DECLARE @CbuOrigen VARCHAR(22);
+    DECLARE @cbu_origen VARCHAR(22);
     DECLARE @Estado VARCHAR(20);
     
     -- Obtener el último id_pago existente
-    SELECT @IdPago = ISNULL(MAX(id_pago), 0) FROM finanzas.pago;
+    SELECT @id_pago = ISNULL(MAX(id_pago), 0) FROM finanzas.pago;
     
     WHILE @i <= @cantidad_registros
     BEGIN
-        SET @IdPago = @IdPago + 1;
+        SET @id_pago = @id_pago + 1;
         
         -- Seleccionar unidad funcional y consorcio juntos
         SELECT TOP 1 
             @id_uf = id_unidad_funcional,
-            @IdConsorcio = id_consorcio
+            @id_consorcio = id_consorcio
         FROM consorcios.unidad_funcional 
         ORDER BY NEWID();
         
@@ -1733,7 +1735,7 @@ BEGIN
         SET @id_expensa = (
             SELECT TOP 1 id_expensa 
             FROM finanzas.expensa 
-            WHERE id_consorcio = @IdConsorcio
+            WHERE id_consorcio = @id_consorcio
             ORDER BY NEWID()
         );
 
@@ -1744,15 +1746,15 @@ BEGIN
         SET @Fecha = DATEADD(DAY, -FLOOR(RAND() * 180), GETDATE());
         SET @Monto = ROUND(RAND() * 100000 + 5000, 2);
         
-        SET @CbuOrigen = (SELECT TOP 1 cbu FROM personas.persona WHERE cbu IS NOT NULL ORDER BY NEWID());
+        SET @cbu_origen = (SELECT TOP 1 cbu FROM personas.persona WHERE cbu IS NOT NULL ORDER BY NEWID());
         
-        IF @CbuOrigen IS NULL
+        IF @cbu_origen IS NULL
         BEGIN
-            SET @CbuOrigen = '';
+            SET @cbu_origen = '';
             DECLARE @j INT = 1;
             WHILE @j <= 22
             BEGIN
-                SET @CbuOrigen = @CbuOrigen + CAST(FLOOR(RAND() * 10) AS VARCHAR(1));
+                SET @cbu_origen = @cbu_origen + CAST(FLOOR(RAND() * 10) AS VARCHAR(1));
                 SET @j = @j + 1;
             END
         END
@@ -1774,13 +1776,13 @@ BEGIN
             estado
         )
         VALUES (
-            @IdPago,
+            @id_pago,
             @id_uf,
-            @IdConsorcio,
+            @id_consorcio,
             @id_expensa,
             @Fecha,
             @Monto,
-            @CbuOrigen,
+            @cbu_origen,
             @Estado
         );
         
