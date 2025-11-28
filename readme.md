@@ -8,12 +8,12 @@ ingreso de datos posible.
 ## Integrantes del equipo
 
 
-- Arcón Wogelman, Nazareno — 44792096 - Usuario: [NazarenoAW](https://github.com/NazarenoAW)
-- Arriola Santiago — 41743980 - Usuario: [Santiagoiiezequiel](https://github.com/Santiagoiiezequiel)
-- Benitez Jimena — 46097948 - Usuario: [jimebenitez-cyber](https://github.com/jimebenitez-cyber)
-- Bonachera Ornella — 46119546 - Usuario: [opbonachera](https://github.com/opbonachera)
-- Perez, Olivia Constanza — 46641730 - Usuario: [perezolivia](https://github.com/perezolivia)
-- Guardia Gabriel — 42364065 - Usuario: [roqueguardia](https://github.com/roqueguardia)
+- Arcón Wogelman, Nazareno —  Usuario: [NazarenoAW](https://github.com/NazarenoAW)
+- Arriola Santiago —  Usuario: [Santiagoiiezequiel](https://github.com/Santiagoiiezequiel)
+- Benitez Jimena —  Usuario: [jimebenitez-cyber](https://github.com/jimebenitez-cyber)
+- Bonachera Ornella —  Usuario: [opbonachera](https://github.com/opbonachera)
+- Perez, Olivia Constanza —  Usuario: [perezolivia](https://github.com/perezolivia)
+- Guardia Gabriel —  Usuario: [roqueguardia](https://github.com/roqueguardia)
 
 ## Nomenclatura y Estándares de Desarrollo
 
@@ -103,4 +103,5 @@ Asegurate de que el usuario SQL utilizado tenga permisos para:
 
 Crear bases de datos.
 Crear tablas, vistas, SPs y funciones.
+
 Ejecutar OPENROWSET y BULK INSERT.
