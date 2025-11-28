@@ -3,20 +3,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # SQL Server Management Studio Version 21
 VisualStudioVersion = 17.14.36603.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{4F2E2C19-372F-40D8-9FA7-9D2138C6997A}") = "com5600_01", "com5600_01\com5600_01.ssmssqlproj", "{987444F4-C6B2-941C-ED11-3C6906DCBB95}"
+Project("{4F2E2C19-372F-40D8-9FA7-9D2138C6997A}") = "Com5600_Grupo01", "Com5600_Grupo01\Com5600_Grupo01.ssmssqlproj", "{94D6B9EB-8FC1-46D3-CE52-92C3C81A310E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Default|Default = Default|Default
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{987444F4-C6B2-941C-ED11-3C6906DCBB95}.Default|Default.ActiveCfg = Default
-		{0B3D0CFF-7FB8-4E66-BFC8-8B06F71FA813}.Default|Default.ActiveCfg = Default
+		{94D6B9EB-8FC1-46D3-CE52-92C3C81A310E}.Default|Default.ActiveCfg = Default
+		{52342439-D5C3-4B82-AC7A-2951800682AF}.Default|Default.ActiveCfg = Default
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {BC420112-48F6-4A47-B768-9394766D4574}
+		SolutionGuid = {F2C4141E-ECCE-4722-B8A8-B26868FD8CB7}
 	EndGlobalSection
 EndGlobal
